@@ -8,13 +8,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-
 import com.epiis.finalproject.business.BusinessExportPdf;
-
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 
 @PreAuthorize("hasAnyRole('ADMIN', 'PROFESSOR', 'STUDENT')")
 @RestController
@@ -26,18 +20,6 @@ public class ExportPdfController {
 		this.businessExportPdf = businessExportPdf;
 	}
 	
-	@Operation(
-        summary = "Descargar Constancia de Matrícula", 
-        description = "Genera y descarga en formato PDF la constancia oficial del semestre actual del estudiante autenticado."
-    )
-	@ApiResponse(
-        responseCode = "200", 
-        description = "PDF generado exitosamente", 
-        content = @Content(
-            mediaType = MediaType.APPLICATION_PDF_VALUE, 
-            schema = @Schema(type = "string", format = "binary") 
-        )
-    )
 	@GetMapping("/downloadscorepdf")
 	public ResponseEntity<byte[]> downloadConstancia(@AuthenticationPrincipal Jwt jwt) {
         String idStudentKeycloak = jwt.getSubject();
@@ -50,18 +32,6 @@ public class ExportPdfController {
                 .body(pdfBytes);
 	}
 	
-	@Operation(
-        summary = "Descargar Historial Académico", 
-        description = "Genera y descarga en formato PDF el historial académico completo del estudiante autenticado."
-    )
-	@ApiResponse(
-        responseCode = "200", 
-        description = "PDF generado exitosamente", 
-        content = @Content(
-            mediaType = MediaType.APPLICATION_PDF_VALUE, 
-            schema = @Schema(type = "string", format = "binary") 
-        )
-    )
 	@GetMapping("/downloadrecordpdf")
 	public ResponseEntity<byte[]> downloadHistorial(@AuthenticationPrincipal Jwt jwt) {
         String idStudentKeycloak = jwt.getSubject();
