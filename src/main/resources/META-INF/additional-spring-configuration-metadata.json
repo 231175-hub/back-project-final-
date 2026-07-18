@@ -1,0 +1,42 @@
+{"properties": [
+  {
+    "name": "file.upload-dir",
+    "type": "java.lang.String",
+    "description": "A description for 'file.upload-dir'"
+  },
+  {
+    "name": "security.jwt.secret-key",
+    "type": "java.lang.String",
+    "description": "A description for 'security.jwt.secret-key'"
+  },
+  {
+    "name": "security.jwt.expiration-time",
+    "type": "java.lang.String",
+    "description": "A description for 'security.jwt.expiration-time'"
+  },
+  {
+    "name": "keycloak.admin.server-url",
+    "type": "java.lang.String",
+    "description": "A description for 'keycloak.admin.server-url'"
+  },
+  {
+    "name": "keycloak.admin.realm",
+    "type": "java.lang.String",
+    "description": "A description for 'keycloak.admin.realm'"
+  },
+  {
+    "name": "keycloak.admin.client-id",
+    "type": "java.lang.String",
+    "description": "A description for 'keycloak.admin.client-id'"
+  },
+  {
+    "name": "keycloak.admin.username",
+    "type": "java.lang.String",
+    "description": "A description for 'keycloak.admin.username'"
+  },
+  {
+    "name": "keycloak.admin.password",
+    "type": "java.lang.String",
+    "description": "A description for 'keycloak.admin.password'"
+  }
+]}
