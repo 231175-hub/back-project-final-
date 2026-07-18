@@ -13,7 +13,6 @@ import java.util.Map;
 @PreAuthorize("hasAnyRole('ADMIN', 'PROFESSOR')")
 @RestController
 @RequestMapping("/intranet")
-@CrossOrigin(origins = "*")
 public class GroupRegisterController {
 
     private final BusinessGroupRegister businessGroupRegister;

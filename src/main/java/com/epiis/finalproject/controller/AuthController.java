@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/intranet/auth")
-@CrossOrigin(origins = "*")
 public class AuthController {
 
     private final BusinessAuth businessAuth;
