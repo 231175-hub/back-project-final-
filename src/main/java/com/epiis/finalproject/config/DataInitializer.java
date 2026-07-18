@@ -88,8 +88,9 @@ public class DataInitializer {
 					System.out.println("Usuario: " + masterEmail);
 					System.out.println("Contraseña: " + masterPassword);
 					System.out.println("UUID Keycloak: " + keycloakUserId);
-				} catch (Exception e) {
-					System.out.println("Error critico  en el seeder al crear el Amdin: " + e.getMessage());
+				} catch (Throwable e) {
+					System.out.println("Error critico en el seeder al crear el Admin: " + e.getMessage());
+					e.printStackTrace();
 				}
 			}
 		};

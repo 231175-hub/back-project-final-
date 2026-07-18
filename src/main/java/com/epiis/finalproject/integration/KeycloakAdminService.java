@@ -3,7 +3,6 @@ package com.epiis.finalproject.integration;
 import java.util.Collections;
 
 import org.keycloak.admin.client.Keycloak;
-import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
@@ -17,30 +16,16 @@ import jakarta.ws.rs.core.Response;
 @Service
 public class KeycloakAdminService {
 	
-	@Value("${keycloak.admin.server-url}")
-	private String serverUrl;
-	
 	@Value("${keycloak.target.realm}")
 	private String targetRealm;
 	
-	@Value("${keycloak.admin.client-id}")
-	private String clientId;
+	private final Keycloak keycloak;
 	
-	@Value("${keycloak.admin.username}")
-	private String username;
-	
-	@Value("${keycloak.admin.password}")
-	private String password;
+	public KeycloakAdminService(Keycloak keycloak) {
+		this.keycloak = keycloak;
+	}
 	
 	public String createUser(String email, String firstName, String surName, String userPassword, String idRole) {
-		Keycloak keycloak = KeycloakBuilder.builder()
-				.serverUrl(serverUrl)
-				.realm("master")
-				.clientId(clientId)
-				.username(username)
-				.password(password)
-				.build();
-		
 		UserRepresentation user = new UserRepresentation();
 		user.setUsername(email);
 		user.setEmail(email);
@@ -101,13 +86,6 @@ public class KeycloakAdminService {
 	}
 
 	public void deleteUser(String userId) {
-		Keycloak keycloak = KeycloakBuilder.builder()
-				.serverUrl(serverUrl)
-				.realm("master")
-				.clientId(clientId)
-				.username(username)
-				.password(password)
-				.build();
 		try {
 			RealmResource realmResource = keycloak.realm(targetRealm);
 			UsersResource usersResource = realmResource.users();
