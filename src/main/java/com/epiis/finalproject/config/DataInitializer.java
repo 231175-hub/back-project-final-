@@ -57,7 +57,10 @@ public class DataInitializer {
 			}
 			
 			if (repositoryUser.count() == 0) {
-				System.out.println("Seeder: No se encontraron usuarios. Creando Administrador Maestro...");
+				if ("false".equalsIgnoreCase(System.getenv("RUN_SEEDER"))) {
+					System.out.println("Seeder: Creación de Administrador Maestro omitida por RUN_SEEDER=false");
+				} else {
+					System.out.println("Seeder: No se encontraron usuarios. Creando Administrador Maestro...");
 				
 				String masterEmail = "admin@master.edu.pe";
 				String masterPassword = "adminmaster12345678";
@@ -94,6 +97,7 @@ public class DataInitializer {
 					e.printStackTrace();
 				}
 			}
+		}
 		};
 	}
 }
