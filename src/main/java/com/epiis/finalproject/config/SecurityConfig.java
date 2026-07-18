@@ -30,6 +30,8 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtTimestampValidator;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 
+import org.springframework.context.annotation.Lazy;
+
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -48,6 +50,7 @@ public class SecurityConfig {
 	private String password;
 
 	@Bean
+	@Lazy
 	public Keycloak keycloakAdminClient() {
 		return KeycloakBuilder.builder()
 				.serverUrl(serverUrl)

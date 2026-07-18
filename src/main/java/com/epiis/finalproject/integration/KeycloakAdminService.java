@@ -13,7 +13,10 @@ import org.springframework.stereotype.Service;
 
 import jakarta.ws.rs.core.Response;
 
+import org.springframework.context.annotation.Lazy;
+
 @Service
+@Lazy
 public class KeycloakAdminService {
 	
 	@Value("${keycloak.target.realm}")

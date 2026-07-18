@@ -10,6 +10,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import org.springframework.context.annotation.Lazy;
 import com.epiis.finalproject.entity.EntityRole;
 import com.epiis.finalproject.entity.EntityUser;
 import com.epiis.finalproject.integration.KeycloakAdminService;
@@ -24,7 +25,7 @@ public class DataInitializer {
 	CommandLineRunner initDatabase(
 			RepositoryRole repositoryRole,
 			RepositoryUser repositoryUser,
-			KeycloakAdminService keycloakAdminService) {
+			@Lazy KeycloakAdminService keycloakAdminService) {
 		
 		return args -> {
 			if (repositoryRole.count() == 0) {
