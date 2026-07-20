@@ -5,8 +5,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.epiis.finalproject.dto.request.user.RequestUserInsert;
@@ -21,7 +23,6 @@ import com.epiis.finalproject.dto.response.user.ResponseUserUpdate;
 import com.epiis.finalproject.dto.response.user.ResponseUserUpdatePassword;
 import com.epiis.finalproject.entity.EntityRole;
 import com.epiis.finalproject.entity.EntityUser;
-import com.epiis.finalproject.integration.KeycloakAdminService;
 import com.epiis.finalproject.repository.RepositoryRole;
 import com.epiis.finalproject.repository.RepositoryUser;
 import com.epiis.finalproject.staticdata.EnumRoles;
@@ -32,12 +33,12 @@ import jakarta.transaction.Transactional;
 public class BusinessUser {
 	private final RepositoryUser repositoryUser;
 	private final RepositoryRole repositoryRole;
-	private final KeycloakAdminService keycloakAdminService;
+	private final PasswordEncoder passwordEncoder;
 	
-	public BusinessUser(RepositoryUser repositoryUser, RepositoryRole repositoryRole, KeycloakAdminService keycloakAdminService) {
+	public BusinessUser(RepositoryUser repositoryUser, RepositoryRole repositoryRole, PasswordEncoder passwordEncoder) {
 		this.repositoryUser = repositoryUser;
 		this.repositoryRole = repositoryRole;
-		this.keycloakAdminService = keycloakAdminService;
+		this.passwordEncoder = passwordEncoder;
 	}
 	
 	@Transactional
@@ -45,22 +46,22 @@ public class BusinessUser {
 		ResponseUserInsert response = new ResponseUserInsert();
 	    
 	    try {
-	        EntityRole roleAdmin = repositoryRole.findByNameRole(EnumRoles.ADMIN.toString()).orElseThrow(() -> new RuntimeException("Error interno: El rol ADMIN no está configurado en la BD."));
+	        EntityRole roleAdmin = repositoryRole.findByNameRole(EnumRoles.ADMIN.toString())
+	        		.orElseThrow(() -> new RuntimeException("Error interno: El rol ADMIN no está configurado en la BD."));
+
+	        if (repositoryUser.findByEmail(request.getEmail()).isPresent()) {
+	        	throw new RuntimeException("El correo electrónico ya está registrado.");
+	        }
 	        
-	        String keycloakUserId = keycloakAdminService.createUser(
-	                request.getEmail(), 
-	                request.getFirstName(), 
-	                request.getSurName(), 
-	                request.getPassword(), 
-	                EnumRoles.ADMIN.toString()
-	        );
-	    
+	        String userId = UUID.randomUUID().toString();
+
 	        EntityUser entityUser = new EntityUser();
 	        
-	        entityUser.setIdUser(keycloakUserId); 
+	        entityUser.setIdUser(userId); 
 	        entityUser.setFirstName(request.getFirstName());
 	        entityUser.setSurName(request.getSurName());
 	        entityUser.setEmail(request.getEmail());
+	        entityUser.setPassword(passwordEncoder.encode(request.getPassword()));
 	        
 	        entityUser.setParentRole(roleAdmin);
 	        
@@ -70,7 +71,7 @@ public class BusinessUser {
 	        repositoryUser.save(entityUser);
 	        
 	        response.success();
-	        response.getListMessage().add("Administrador registrado correctamente en el sistema y Keycloak.");
+	        response.getListMessage().add("Administrador registrado correctamente.");
 	        
 	    } catch (Exception e) {
 	        e.printStackTrace();
@@ -160,11 +161,13 @@ public class BusinessUser {
 		
 		if (optional.isPresent()) {
 			EntityUser entityUser = optional.get();
-			
+			entityUser.setPassword(passwordEncoder.encode(request.getPassword()));
 			entityUser.setUpdatedAt(new java.sql.Date(new Date().getTime()));
+			repositoryUser.save(entityUser);
 			
 			response.success();
 			response.getListMessage().add("Contraseña de usuario actualizada correctamente");
+			return response;
 		}
 		
 		response.error();
@@ -173,7 +176,7 @@ public class BusinessUser {
 		return response;
 	}
 	
-	public void updateProfileImage(String idUser,  RequestUserUpdateUploadImg request) throws java.io.IOException {
+	public void updateProfileImage(String idUser, RequestUserUpdateUploadImg request) throws java.io.IOException {
 		EntityUser user = repositoryUser.findById(idUser)
 				.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 

@@ -2,6 +2,7 @@ package com.epiis.finalproject.controller;
 import org.springframework.security.access.prepost.PreAuthorize;
 import jakarta.validation.Valid;
 
+import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 
@@ -22,11 +23,8 @@ import com.epiis.finalproject.dto.request.schedule.RequestScheduleUpdate;
 import com.epiis.finalproject.dto.response.schedule.ResponseScheduleDeleteById;
 import com.epiis.finalproject.dto.response.schedule.ResponseScheduleInsert;
 import com.epiis.finalproject.dto.response.schedule.ResponseScheduleUpdate;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import com.epiis.finalproject.dto.response.schedule.ResponseScheduleGetAll;
 
-@PreAuthorize("hasAnyRole('ADMIN', 'STUDENT')")
 @RestController
 @RequestMapping(path = "intranet")
 public class ScheduleController {
@@ -36,6 +34,7 @@ public class ScheduleController {
 		this.businessSchedule = businessSchedule;
 	}
 	
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR')")
 	@PostMapping(path = "registerschedule", consumes = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<ResponseScheduleInsert> insert(@Valid @RequestBody List<RequestScheduleInsert> request){
 		ResponseScheduleInsert response = businessSchedule.insert(request);
@@ -43,18 +42,21 @@ public class ScheduleController {
 		return ResponseEntity.ok(response);
 	}
 	
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR', 'STUDENT', 'ESTUDIANTE', 'PROFESSOR', 'PROFESOR')")
 	@GetMapping(path = "indexschedule")
-	public ResponseEntity<List<ResponseScheduleGetAll>> getAll(@AuthenticationPrincipal Jwt jwt){
-		String idKeycloak = jwt.getSubject();
-		return ResponseEntity.ok(businessSchedule.getStudentSchedule(idKeycloak));
+	public ResponseEntity<List<ResponseScheduleGetAll>> getAll(Principal principal){
+		String email = principal != null ? principal.getName() : null;
+		return ResponseEntity.ok(businessSchedule.getStudentScheduleByUserEmail(email));
 	}
 	
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR', 'STUDENT', 'ESTUDIANTE', 'PROFESSOR', 'PROFESOR')")
 	@GetMapping(path = "showschedule/{idSchedule}")
 	public ResponseEntity<Map<String, Object>> getById(@PathVariable String idSchedule){
 		
 		return ResponseEntity.ok(businessSchedule.getById(idSchedule));
 	}
 	
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR')")
 	@DeleteMapping(path = "deleteschedule/{idSchedule}")
 	public ResponseEntity<ResponseScheduleDeleteById> deleteById(@PathVariable String idSchedule){
 		ResponseScheduleDeleteById response = businessSchedule.deleteById(idSchedule);
@@ -62,6 +64,7 @@ public class ScheduleController {
 		return ResponseEntity.ok(response);
 	}
 	
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR')")
 	@PutMapping(path = "updateschedule/{idSchedule}", consumes = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<ResponseScheduleUpdate> update(@PathVariable String idSchedule, @Valid @RequestBody RequestScheduleUpdate request){
 		ResponseScheduleUpdate response = businessSchedule.update(idSchedule, request);

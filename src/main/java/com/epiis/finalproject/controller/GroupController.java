@@ -29,7 +29,6 @@ import com.epiis.finalproject.dto.response.groupstudent.ResponseGroupStudentInse
 import com.epiis.finalproject.dto.response.student.ResponseUnassignedStudent;
 import com.epiis.finalproject.entity.EntityGroup;
 
-@PreAuthorize("hasRole('ADMIN')")
 @RestController
 @RequestMapping(path = "intranet")
 public class GroupController {
@@ -39,6 +38,7 @@ public class GroupController {
 		this.businessGroup = businessGroup;
 	}
 	
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR')")
 	@PostMapping(path = "registergroup", consumes = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<ResponseGroupInsert> insert(@Valid @RequestBody RequestGroupInsert request){
 		ResponseGroupInsert response = businessGroup.insert(request);
@@ -46,18 +46,21 @@ public class GroupController {
 		return ResponseEntity.ok(response);
 	}
 	
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR', 'PROFESSOR', 'PROFESOR')")
 	@GetMapping(path = "indexgroup")
 	public ResponseEntity<Map<String, Object>> getAll(){
 		
 		return ResponseEntity.ok(businessGroup.getAll());
 	}
 	
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR', 'PROFESSOR', 'PROFESOR')")
 	@GetMapping(path = "showgroup/{idGroup}")
 	public ResponseEntity<Map<String, Object>> getById(@PathVariable String idGroup){
 		
 		return ResponseEntity.ok(businessGroup.getById(idGroup));
 	}
 	
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR')")
 	@DeleteMapping(path = "deletegroup/{idGroup}")
 	public ResponseEntity<ResponseGroupDeleteById> deleteById(@PathVariable String idGroup){
 		ResponseGroupDeleteById response = businessGroup.deleteById(idGroup);
@@ -65,6 +68,7 @@ public class GroupController {
 		return ResponseEntity.ok(response);
 	}
 	
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR')")
 	@PutMapping(path = "updategroup/{idGroup}", consumes = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<ResponseGroupUpdate> update(@PathVariable String idGroup, @Valid @RequestBody RequestGroupUpdate request){
 		ResponseGroupUpdate response = businessGroup.update(idGroup, request);
@@ -72,32 +76,35 @@ public class GroupController {
 		return ResponseEntity.ok(response);
 	}
 	
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR')")
 	@PostMapping("/assignGroups")
     public ResponseEntity<ResponseGroupStudentInsert> assignGroups(@Valid @RequestBody RequestGroupAssignment request) {
         ResponseGroupStudentInsert response = businessGroup.createAndAssignGroups(request);
         return ResponseEntity.ok(response);
     }
 	
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR', 'PROFESSOR', 'PROFESOR')")
 	@GetMapping("/getUnassignedStudents")
     public ResponseEntity<List<ResponseUnassignedStudent>> getUnassignedStudents(@RequestParam("idCourse") String idCourse) {
         List<ResponseUnassignedStudent> result = businessGroup.getUnassignedStudents(idCourse);
         return ResponseEntity.ok(result);
     }
 	
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR', 'PROFESSOR', 'PROFESOR')")
 	@GetMapping("getGroupWithCourse/{idCourse}")
     public ResponseEntity<?> getGroupsByCourseId(@PathVariable String idCourse) {
         List<EntityGroup> groups = businessGroup.getGroupsByCourse(idCourse);
         return ResponseEntity.ok(Map.of("data", groups));
     }
 	
-	@PreAuthorize("hasAnyRole('ADMIN', 'PROFESSOR')")
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR', 'PROFESSOR', 'PROFESOR')")
 	@GetMapping("/professorgroups/{idProfessor}")
     public ResponseEntity<ResponseProfessorGroups> getGroupsByProfessor(@PathVariable String idProfessor) {
         ResponseProfessorGroups response = businessGroup.getGroupsByProfessor(idProfessor);
         return ResponseEntity.ok(response);
     }
 
-	@PreAuthorize("hasAnyRole('ADMIN', 'PROFESSOR')")
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR', 'PROFESSOR', 'PROFESOR')")
 	@PutMapping(path = "updategroupweights/{idGroup}", consumes = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<ResponseGroupUpdate> updateWeights(@PathVariable String idGroup, @RequestBody Map<String, Double> weights) {
 		double conceptual = weights.getOrDefault("conceptualWeight", 0.0);

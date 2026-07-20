@@ -37,6 +37,14 @@ public class EntityUser {
 	@Column(name = "email")
 	private String email;
 
+	@com.fasterxml.jackson.annotation.JsonIgnore
+	@Column(name = "password")
+	private String password;
+
+	@com.fasterxml.jackson.annotation.JsonIgnore
+	@Column(name = "refresh_token", length = 500)
+	private String refreshToken;
+
 	@Column(name = "urlImageProfile")
 	private String urlImageProfile;
 

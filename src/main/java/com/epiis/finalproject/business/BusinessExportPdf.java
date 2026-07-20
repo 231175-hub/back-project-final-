@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
@@ -16,9 +17,11 @@ import com.epiis.finalproject.dto.response.schedule.ResponseScheduleGetAll;
 import com.epiis.finalproject.entity.EntityAcademicPeriod;
 import com.epiis.finalproject.entity.EntityCourseEnrollment;
 import com.epiis.finalproject.entity.EntityStudent;
+import com.epiis.finalproject.entity.EntityUser;
 import com.epiis.finalproject.repository.RepositoryAcademicperiod;
 import com.epiis.finalproject.repository.RepositoryCourseEnrollment;
 import com.epiis.finalproject.repository.RepositoryStudent;
+import com.epiis.finalproject.repository.RepositoryUser;
 import com.epiis.finalproject.repository.RepositoryGroupStudent; 
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 
@@ -31,21 +34,63 @@ public class BusinessExportPdf {
     private final RepositoryAcademicperiod repositoryAcademicPeriod;
     private final RepositoryGroupStudent repositoryGroupStudent; 
     private final RepositoryCourseEnrollment repositoryCourseEnrollment;
+    private final RepositoryUser repositoryUser;
 
-    public BusinessExportPdf(BusinessStudent businessStudent, TemplateEngine templateEngine, RepositoryStudent repositoryStudent, RepositoryAcademicperiod repositoryAcademicPeriod,RepositoryGroupStudent repositoryGroupStudent, RepositoryCourseEnrollment repositoryCourseEnrollment) {
+    public BusinessExportPdf(BusinessStudent businessStudent, TemplateEngine templateEngine, RepositoryStudent repositoryStudent, RepositoryAcademicperiod repositoryAcademicPeriod, RepositoryGroupStudent repositoryGroupStudent, RepositoryCourseEnrollment repositoryCourseEnrollment, RepositoryUser repositoryUser) {
         this.businessStudent = businessStudent;
         this.templateEngine = templateEngine;
         this.repositoryStudent = repositoryStudent;
         this.repositoryAcademicPeriod = repositoryAcademicPeriod;
         this.repositoryGroupStudent = repositoryGroupStudent;
         this.repositoryCourseEnrollment = repositoryCourseEnrollment;
+        this.repositoryUser = repositoryUser;
+    }
+
+    private EntityStudent findStudentByEmailOrId(String identifier) {
+        if (identifier == null || identifier.isBlank()) return null;
+        Optional<EntityStudent> s = repositoryStudent.findById(identifier);
+        if (s.isPresent()) return s.get();
+
+        Optional<EntityUser> u = repositoryUser.findFirstByEmail(identifier);
+        if (u.isPresent() && u.get().getChildStudent() != null) {
+            return u.get().getChildStudent();
+        }
+
+        return repositoryStudent.findAll().stream()
+                .filter(student -> student.getParentUser() != null && identifier.equalsIgnoreCase(student.getParentUser().getEmail()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    public byte[] generatePdfByUserEmail(String email) {
+        EntityStudent student = findStudentByEmailOrId(email);
+        if (student == null) {
+            throw new RuntimeException("Estudiante no encontrado para la cuenta actual.");
+        }
+        return generatePdf(student.getIdStudent());
+    }
+
+    public byte[] generateHistorialPdfByUserEmail(String email) {
+        EntityStudent student = findStudentByEmailOrId(email);
+        if (student == null) {
+            throw new RuntimeException("Estudiante no encontrado para la cuenta actual.");
+        }
+        return generateHistorialPdf(student.getIdStudent());
+    }
+
+    public byte[] generateSchedulePdfByUserEmail(String email) {
+        EntityStudent student = findStudentByEmailOrId(email);
+        if (student == null) {
+            throw new RuntimeException("Estudiante no encontrado para la cuenta actual.");
+        }
+        return generateSchedulePdf(student.getIdStudent());
     }
 
     public byte[] generatePdf(String idStudentKeycloak) {
+        EntityStudent estudiante = findStudentByEmailOrId(idStudentKeycloak);
+        String studentId = estudiante != null ? estudiante.getIdStudent() : idStudentKeycloak;
         
-        Map<String, Object> data = businessStudent.getAllBoletasForStudent(idStudentKeycloak);
-        EntityStudent estudiante = repositoryStudent.findById(idStudentKeycloak).orElse(null);
-        
+        Map<String, Object> data = businessStudent.getAllBoletasForStudent(studentId);
         EntityAcademicPeriod periodoActivo = repositoryAcademicPeriod.findByStatus("Activo").orElse(null);
         
         String semestreActual = "NO DEFINIDO";
@@ -57,12 +102,13 @@ public class BusinessExportPdf {
         int totalCredits = 0;
 
         if (estudiante != null) {
-            String fullName = estudiante.getParentUser().getSurName() + " " + estudiante.getParentUser().getFirstName();
-            String career = estudiante.getParentSchool().getNameSchool();
+            String fullName = (estudiante.getParentUser().getSurName() != null ? estudiante.getParentUser().getSurName() : "") + " " + 
+                             (estudiante.getParentUser().getFirstName() != null ? estudiante.getParentUser().getFirstName() : "");
+            String career = estudiante.getParentSchool() != null ? estudiante.getParentSchool().getNameSchool() : "GENERAL";
 
             studentData.put("fullName", fullName.toUpperCase()); 
             studentData.put("career", career.toUpperCase());
-            studentData.put("code", estudiante.getCode()); 
+            studentData.put("code", estudiante.getCode() != null ? estudiante.getCode() : ""); 
             studentData.put("semester", semestreActual); 
             
             totalCredits = repositoryGroupStudent.sumTotalCreditsByStudentAndActivePeriod(estudiante.getIdStudent());
@@ -87,19 +133,18 @@ public class BusinessExportPdf {
     }
     
     public byte[] generateHistorialPdf(String idStudentKeycloak) {
-        
-        EntityStudent estudiante = repositoryStudent.findById(idStudentKeycloak).orElse(null);
+        EntityStudent estudiante = findStudentByEmailOrId(idStudentKeycloak);
         if (estudiante == null) {
             throw new RuntimeException("Estudiante no encontrado");
         }
+        String studentId = estudiante.getIdStudent();
 
-        List<EntityCourseEnrollment> historialBD = repositoryCourseEnrollment.findHistorialByStudent(idStudentKeycloak);
+        List<EntityCourseEnrollment> historialBD = repositoryCourseEnrollment.findHistorialByStudent(studentId);
 
         Map<String, List<Map<String, Object>>> historialAgrupado = new LinkedHashMap<>();
         int totalCreditosAprobados = 0;
 
         for (EntityCourseEnrollment enrollment : historialBD) {
-            
             String year = String.valueOf(enrollment.getParentPeriod().getYearPeriod());
             String number = String.valueOf(enrollment.getParentPeriod().getNumberPeriod());
             String nombreSemestre = "SEMESTRE ACADEMICO " + year + "-" + number; 
@@ -122,10 +167,11 @@ public class BusinessExportPdf {
         }
 
         Map<String, String> studentData = new HashMap<>();
-        String fullName = estudiante.getParentUser().getSurName() + " " + estudiante.getParentUser().getFirstName();
+        String fullName = (estudiante.getParentUser().getSurName() != null ? estudiante.getParentUser().getSurName() : "") + " " + 
+                         (estudiante.getParentUser().getFirstName() != null ? estudiante.getParentUser().getFirstName() : "");
         studentData.put("fullName", fullName.toUpperCase()); 
-        studentData.put("career", estudiante.getParentSchool().getNameSchool().toUpperCase());
-        studentData.put("code", estudiante.getCode());
+        studentData.put("career", estudiante.getParentSchool() != null ? estudiante.getParentSchool().getNameSchool().toUpperCase() : "GENERAL");
+        studentData.put("code", estudiante.getCode() != null ? estudiante.getCode() : "");
       
         Context context = new Context();
         context.setVariable("student", studentData);
@@ -146,19 +192,20 @@ public class BusinessExportPdf {
     }
     
     public byte[] generateSchedulePdf(String idStudentKeycloak) {
-		
-		EntityStudent estudiante = repositoryStudent.findById(idStudentKeycloak).orElse(null);
+		EntityStudent estudiante = findStudentByEmailOrId(idStudentKeycloak);
 		if (estudiante == null) {
 			throw new RuntimeException("Estudiante no encontrado");
 		}
+		String studentId = estudiante.getIdStudent();
 
-		List<ResponseScheduleGetAll> scheduleList = repositoryGroupStudent.findCustomScheduleByStudentId(idStudentKeycloak);
+		List<ResponseScheduleGetAll> scheduleList = repositoryGroupStudent.findCustomScheduleByStudentId(studentId);
 
 		Map<String, String> studentData = new HashMap<>();
-		String fullName = estudiante.getParentUser().getSurName() + " " + estudiante.getParentUser().getFirstName();
+		String fullName = (estudiante.getParentUser().getSurName() != null ? estudiante.getParentUser().getSurName() : "") + " " + 
+                         (estudiante.getParentUser().getFirstName() != null ? estudiante.getParentUser().getFirstName() : "");
 		studentData.put("fullName", fullName.toUpperCase()); 
-		studentData.put("career", estudiante.getParentSchool().getNameSchool().toUpperCase());
-		studentData.put("code", estudiante.getCode());
+		studentData.put("career", estudiante.getParentSchool() != null ? estudiante.getParentSchool().getNameSchool().toUpperCase() : "GENERAL");
+		studentData.put("code", estudiante.getCode() != null ? estudiante.getCode() : "");
 		
 		EntityAcademicPeriod periodoActivo = repositoryAcademicPeriod.findByStatus("Activo").orElse(null);
 		studentData.put("semester", periodoActivo != null ? (periodoActivo.getYearPeriod() + "-" + periodoActivo.getNumberPeriod()) : "NO DEFINIDO");

@@ -1,16 +1,16 @@
 package com.epiis.finalproject.controller;
 import org.springframework.security.access.prepost.PreAuthorize;
 
+import java.security.Principal;
+
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.epiis.finalproject.business.BusinessExportPdf;
 
-@PreAuthorize("hasAnyRole('ADMIN', 'PROFESSOR', 'STUDENT')")
+@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR', 'PROFESSOR', 'PROFESOR', 'STUDENT', 'ESTUDIANTE')")
 @RestController
 @RequestMapping(path = "intranet")
 public class ExportPdfController {
@@ -21,10 +21,9 @@ public class ExportPdfController {
 	}
 	
 	@GetMapping("/downloadscorepdf")
-	public ResponseEntity<byte[]> downloadConstancia(@AuthenticationPrincipal Jwt jwt) {
-        String idStudentKeycloak = jwt.getSubject();
-        
-        byte[] pdfBytes = businessExportPdf.generatePdf(idStudentKeycloak);
+	public ResponseEntity<byte[]> downloadConstancia(Principal principal) {
+        String email = principal != null ? principal.getName() : null;
+        byte[] pdfBytes = businessExportPdf.generatePdfByUserEmail(email);
         
         return ResponseEntity.ok()
                 .header("Content-Disposition", "attachment; filename=Constancia_Matricula.pdf")
@@ -33,10 +32,9 @@ public class ExportPdfController {
 	}
 	
 	@GetMapping("/downloadrecordpdf")
-	public ResponseEntity<byte[]> downloadHistorial(@AuthenticationPrincipal Jwt jwt) {
-        String idStudentKeycloak = jwt.getSubject();
-        
-        byte[] pdfBytes = businessExportPdf.generateHistorialPdf(idStudentKeycloak);
+	public ResponseEntity<byte[]> downloadHistorial(Principal principal) {
+        String email = principal != null ? principal.getName() : null;
+        byte[] pdfBytes = businessExportPdf.generateHistorialPdfByUserEmail(email);
         
         return ResponseEntity.ok()
                 .header("Content-Disposition", "attachment; filename=Historial_Academico.pdf")
@@ -45,10 +43,9 @@ public class ExportPdfController {
 	}
 	
 	@GetMapping("/downloadschedulepdf")
-	public ResponseEntity<byte[]> downloadSchedule(@AuthenticationPrincipal Jwt jwt) {
-        String idStudentKeycloak = jwt.getSubject();
-        
-        byte[] pdfBytes = businessExportPdf.generateSchedulePdf(idStudentKeycloak);
+	public ResponseEntity<byte[]> downloadSchedule(Principal principal) {
+        String email = principal != null ? principal.getName() : null;
+        byte[] pdfBytes = businessExportPdf.generateSchedulePdfByUserEmail(email);
         
         return ResponseEntity.ok()
                 .header("Content-Disposition", "attachment; filename=Horario_Academico_UNAMBA.pdf")

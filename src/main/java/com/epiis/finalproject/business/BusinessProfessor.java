@@ -24,7 +24,19 @@ import com.epiis.finalproject.dto.response.user.ResponseUserUpdatePassword;
 import com.epiis.finalproject.entity.EntityProfessor;
 import com.epiis.finalproject.entity.EntityRole;
 import com.epiis.finalproject.entity.EntityUser;
-import com.epiis.finalproject.integration.KeycloakAdminService;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import com.epiis.finalproject.dto.request.professor.RequestProfessorInsert;
+import com.epiis.finalproject.dto.request.professor.RequestProfessorUpdate;
+import com.epiis.finalproject.dto.request.user.RequestUserUpdatePassword;
+import com.epiis.finalproject.dto.response.professor.ResponseProfessorDeleteById;
+import com.epiis.finalproject.dto.response.professor.ResponseProfessorGetAll;
+import com.epiis.finalproject.dto.response.professor.ResponseProfessorGetById;
+import com.epiis.finalproject.dto.response.professor.ResponseProfessorInsert;
+import com.epiis.finalproject.dto.response.professor.ResponseProfessorUpdate;
+import com.epiis.finalproject.dto.response.user.ResponseUserUpdatePassword;
+import com.epiis.finalproject.entity.EntityProfessor;
+import com.epiis.finalproject.entity.EntityRole;
+import com.epiis.finalproject.entity.EntityUser;
 import com.epiis.finalproject.repository.RepositoryProfessor;
 import com.epiis.finalproject.repository.RepositoryRole;
 import com.epiis.finalproject.repository.RepositoryUser;
@@ -36,19 +48,15 @@ import jakarta.transaction.Transactional;
 @Service
 public class BusinessProfessor {
 	private final RepositoryProfessor repositoryProfessor;
-	
 	private final RepositoryUser repositoryUser;
-	
-	private final KeycloakAdminService keycloakAdminService;
-	
+	private final PasswordEncoder passwordEncoder;
 	private final RepositoryRole repositoryRole;
-
 	private final EntityManager entityManager;
 	
-	public BusinessProfessor(RepositoryProfessor repositoryProfessor, RepositoryUser repositoryUser, KeycloakAdminService keycloakAdminService, RepositoryRole repositoryRole, EntityManager entityManager) {
+	public BusinessProfessor(RepositoryProfessor repositoryProfessor, RepositoryUser repositoryUser, PasswordEncoder passwordEncoder, RepositoryRole repositoryRole, EntityManager entityManager) {
 		this.repositoryProfessor = repositoryProfessor;
 		this.repositoryUser = repositoryUser;
-		this.keycloakAdminService = keycloakAdminService;
+		this.passwordEncoder = passwordEncoder;
 		this.repositoryRole = repositoryRole;
 		this.entityManager = entityManager;
 	}
@@ -56,34 +64,33 @@ public class BusinessProfessor {
 	@Transactional
 	public ResponseProfessorInsert insert(RequestProfessorInsert request) {
 		ResponseProfessorInsert response = new ResponseProfessorInsert();
-		String keycloakUserId = null;
 		try {
-			EntityRole roleProfessor = repositoryRole.findByNameRole(EnumRoles.PROFESSOR.toString()).orElseThrow(() -> new RuntimeException("Error interno: El rol PROFESSOR no está configurado en la base de datos."));
+			EntityRole roleProfessor = repositoryRole.findByNameRole(EnumRoles.PROFESSOR.toString())
+					.orElseThrow(() -> new RuntimeException("Error interno: El rol PROFESSOR no está configurado en la base de datos."));
 			
-			keycloakUserId = keycloakAdminService.createUser(
-					request.getEmail(), 
-					request.getFirstName(), 
-					request.getSurName(), 
-					request.getPassword(), 
-					EnumRoles.PROFESSOR.toString()
-			);
+			if (repositoryUser.findByEmail(request.getEmail()).isPresent()) {
+				throw new RuntimeException("El correo electrónico ya está registrado.");
+			}
+
+			String userId = UUID.randomUUID().toString();
 		
 			EntityUser entityUser = new EntityUser();
-			entityUser.setIdUser(keycloakUserId);
+			entityUser.setIdUser(userId);
 			entityUser.setFirstName(request.getFirstName());
 			entityUser.setSurName(request.getSurName());
 			entityUser.setEmail(request.getEmail());
+			entityUser.setPassword(passwordEncoder.encode(request.getPassword()));
+			entityUser.setCreatedAt(new java.sql.Date(new Date().getTime()));
+			entityUser.setUpdatedAt(entityUser.getCreatedAt());
 			
 			EntityProfessor entityProfessor = new EntityProfessor();
-			entityProfessor.setIdProfessor(keycloakUserId);
+			entityProfessor.setIdProfessor(userId);
 			entityProfessor.setParentUser(entityUser);
 			entityProfessor.setCreatedAt(entityUser.getCreatedAt());
 			entityProfessor.setUpdatedAt(entityUser.getCreatedAt());
 			
 			entityUser.setChildProfessor(entityProfessor); // Bidirectional association
 			entityUser.setParentRole(roleProfessor); 
-			entityUser.setCreatedAt(new java.sql.Date(new Date().getTime()));
-			entityUser.setUpdatedAt(entityUser.getCreatedAt());
 			
 			entityManager.persist(entityUser); // Forces SQL INSERT for both User and Professor due to cascade
 			
@@ -92,13 +99,6 @@ public class BusinessProfessor {
 			
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (keycloakUserId != null) {
-				try {
-					keycloakAdminService.deleteUser(keycloakUserId);
-				} catch (Exception ex) {
-					System.err.println("Error al eliminar usuario de Keycloak durante el rollback: " + ex.getMessage());
-				}
-			}
 			response.error();
 			response.getListMessage().add("Error al registrar el profesor: " + e.getMessage());
 		}
@@ -142,12 +142,6 @@ public class BusinessProfessor {
 		ResponseProfessorDeleteById response = new ResponseProfessorDeleteById();
 		
 		repositoryProfessor.deleteById(idProfessor);
-		
-		try {
-			keycloakAdminService.deleteUser(idProfessor);
-		} catch (Exception e) {
-			System.err.println("Aviso: No se pudo eliminar de Keycloak en el soft delete: " + e.getMessage());
-		}
 		
 		response.success();
 		response.getListMessage().add("Profesor eliminado correctamente");

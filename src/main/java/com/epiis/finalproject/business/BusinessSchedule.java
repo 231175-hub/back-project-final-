@@ -152,4 +152,17 @@ public class BusinessSchedule {
 	public List<ResponseScheduleGetAll> getStudentSchedule(String idStudentKeycloak) {
 	    return repositoryGroupStudent.findCustomScheduleByStudentId(idStudentKeycloak);
 	}
+
+	@Transactional(readOnly = true)
+	public List<ResponseScheduleGetAll> getStudentScheduleByUserEmail(String email) {
+		if (email == null || email.isBlank()) {
+			return java.util.Collections.emptyList();
+		}
+		Optional<EntityUser> userOpt = repositoryUser.findFirstByEmail(email);
+		if (userOpt.isPresent() && userOpt.get().getChildStudent() != null) {
+			String studentId = userOpt.get().getChildStudent().getIdStudent();
+			return repositoryGroupStudent.findCustomScheduleByStudentId(studentId);
+		}
+		return repositoryGroupStudent.findCustomScheduleByStudentId(email);
+	}
 }

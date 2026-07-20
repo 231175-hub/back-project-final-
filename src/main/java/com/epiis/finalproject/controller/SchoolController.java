@@ -22,7 +22,6 @@ import com.epiis.finalproject.dto.response.school.ResponseSchoolInsert;
 import com.epiis.finalproject.dto.response.school.ResponseSchoolUpdate;
 
 
-@PreAuthorize("hasRole('ADMIN')")
 @RestController
 @RequestMapping(path = "intranet")
 public class SchoolController {
@@ -32,6 +31,7 @@ public class SchoolController {
 		this.businessSchool = businessSchool;
 	}
 	
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR')")
 	@PostMapping(path = "registerschool", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<ResponseSchoolInsert> actionInsert(@ModelAttribute RequestSchoolInsert request) throws Exception{
 		ResponseSchoolInsert response = businessSchool.insert(request);
@@ -39,19 +39,21 @@ public class SchoolController {
 		return ResponseEntity.ok(response);
 	}
 	
-	
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR', 'PROFESSOR', 'PROFESOR', 'STUDENT', 'ESTUDIANTE')")
 	@GetMapping(path = "indexschool")
 	public ResponseEntity<Map<String, Object>> getAll(){
 		
 		return ResponseEntity.ok(businessSchool.getAll());
 	}
 	
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR', 'PROFESSOR', 'PROFESOR', 'STUDENT', 'ESTUDIANTE')")
 	@GetMapping(path = "showschool/{idSchool}")
 	public ResponseEntity<Map<String, Object>> getById(@PathVariable String idSchool){
 		
 		return ResponseEntity.ok(businessSchool.getById(idSchool));
 	}
 	
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR')")
 	@DeleteMapping(path = "deleteschool/{idSchool}")
 	public ResponseEntity<ResponseSchoolDeleteById> deleteById(@PathVariable String idSchool) throws Exception{
 		ResponseSchoolDeleteById response = businessSchool.deleteById(idSchool);
@@ -59,6 +61,7 @@ public class SchoolController {
 		return ResponseEntity.ok(response);
 	}
 	
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR')")
 	@PutMapping(path = "updateschool/{idSchool}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<ResponseSchoolUpdate> update(@PathVariable String idSchool, @ModelAttribute RequestSchoolUpdate request){
 		ResponseSchoolUpdate response = businessSchool.update(idSchool, request);

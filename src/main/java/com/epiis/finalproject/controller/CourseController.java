@@ -25,7 +25,6 @@ import com.epiis.finalproject.dto.response.course.ResponseCourseInsert;
 import com.epiis.finalproject.dto.response.course.ResponseCourseSearch;
 import com.epiis.finalproject.dto.response.course.ResponseCourseUpdate;
 
-@PreAuthorize("hasRole('ADMIN')")
 @RestController
 @RequestMapping(path = "intranet")
 public class CourseController {
@@ -35,6 +34,7 @@ public class CourseController {
 		this.businessCourse = businessCourse;
 	}
 	
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR')")
 	@PostMapping(path = "registercourse", consumes = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<ResponseCourseInsert> insert(@Valid @RequestBody RequestCourseInsert request){
 		ResponseCourseInsert response = businessCourse.insert(request);
@@ -42,18 +42,21 @@ public class CourseController {
 		return ResponseEntity.ok(response);
 	}
 	
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR', 'PROFESSOR', 'PROFESOR', 'STUDENT', 'ESTUDIANTE')")
 	@GetMapping(path = "indexcourse")
 	public ResponseEntity<Map<String, Object>> getAll(){
 		
 		return ResponseEntity.ok(businessCourse.getAll());
 	}
 	
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR', 'PROFESSOR', 'PROFESOR', 'STUDENT', 'ESTUDIANTE')")
 	@GetMapping(path = "showcourse/{idCourse}")
 	public ResponseEntity<Map<String, Object>> getById(@PathVariable String idCourse){
 		
 		return ResponseEntity.ok(businessCourse.getById(idCourse));
 	}
 	
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR')")
 	@DeleteMapping(path = "deletecourse/{idCourse}")
 	public ResponseEntity<ResponseCourseDeleteById> deleteById(@PathVariable String idCourse){
 		ResponseCourseDeleteById response = businessCourse.deleteById(idCourse);
@@ -61,6 +64,7 @@ public class CourseController {
 		return ResponseEntity.ok(response);
 	}
 	
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR')")
 	@PutMapping(path = "updatecourse/{idCourse}", consumes = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<ResponseCourseUpdate> update(@PathVariable String idCourse, @Valid @RequestBody RequestCourseUpdate resquest){
 		ResponseCourseUpdate response = businessCourse.update(idCourse, resquest);
@@ -68,6 +72,7 @@ public class CourseController {
 		return ResponseEntity.ok(response);
 	}
 	
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR', 'PROFESSOR', 'PROFESOR', 'STUDENT', 'ESTUDIANTE')")
 	@GetMapping("/searchCourse")
     public ResponseEntity<List<ResponseCourseSearch>> searchCourse(
             @RequestParam(value = "query", required = false, defaultValue = "") String query,

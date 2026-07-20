@@ -1,13 +1,15 @@
 package com.epiis.finalproject.controller;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.epiis.finalproject.business.BusinessUser;
 import com.epiis.finalproject.entity.EntityUser;
 import com.epiis.finalproject.repository.RepositoryUser;
-import org.springframework.core.io.Resource;
 
 @PreAuthorize("hasAnyRole('ADMIN', 'PROFESSOR', 'STUDENT')")
 @RestController
@@ -30,30 +31,40 @@ public class MeController {
 		this.businessUser = businessUser;
 	}
 	
+	@Transactional(readOnly = true)
 	@GetMapping(path = "me")
-	public Map<String, Object> ObtainMyProfile(@AuthenticationPrincipal Jwt jwt){
+	public Map<String, Object> ObtainMyProfile() {
 		Map<String, Object> profile = new HashMap<>();
 		
-		String keyCloakId = jwt.getSubject();
-		
 		try {
-			EntityUser localuser = repositoryUser.findById(keyCloakId)
-					.orElseThrow(() -> new RuntimeException("Usuario no encontrado en la base de datos local"));
+			Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+			if (authentication == null || !authentication.isAuthenticated()) {
+				profile.put("error", "Usuario no autenticado");
+				return profile;
+			}
+
+			String userEmail = authentication.getName();
+			EntityUser localuser = repositoryUser.findFirstByEmail(userEmail)
+					.orElseGet(() -> repositoryUser.findById(userEmail).orElse(null));
 			
-			profile.put("ïd_user", localuser.getIdUser());
-			profile.put("email", localuser.getEmail());
-			profile.put("full_name", localuser.getFirstName() + " " + localuser.getSurName());
-			profile.put("url_image", localuser.getUrlImageProfile());
-			
-			if (localuser.getParentRole() != null) {
-				profile.put("role", localuser.getParentRole().getNameRole());
+			if (localuser != null) {
+				profile.put("id_user", localuser.getIdUser());
+				profile.put("email", localuser.getEmail());
+				profile.put("full_name", (localuser.getFirstName() != null ? localuser.getFirstName() : "") + " " + (localuser.getSurName() != null ? localuser.getSurName() : ""));
+				profile.put("url_image", localuser.getUrlImageProfile());
+				
+				if (localuser.getParentRole() != null && localuser.getParentRole().getNameRole() != null) {
+					profile.put("role", localuser.getParentRole().getNameRole());
+				} else {
+					profile.put("role", "Sin Rol");
+				}
 			} else {
-				profile.put("role", "Sin Rol");
+				profile.put("error", "No se pudo cargar el perfil local del usuario.");
+				profile.put("email", userEmail);
 			}
 		} catch (Exception e) {
-			profile.put("error", "No se pudo cargar el perfil local: " + e.getMessage());
-			profile.put("id_keycloak", keyCloakId);
-			profile.put("email", jwt.getClaimAsString("email"));
+			e.printStackTrace();
+			profile.put("error", "Error interno al cargar perfil: " + e.getMessage());
 		}
 
 		return profile;

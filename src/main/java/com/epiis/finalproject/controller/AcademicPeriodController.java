@@ -22,7 +22,6 @@ import com.epiis.finalproject.dto.response.academicperiod.ResponseAcademicPeriod
 import com.epiis.finalproject.dto.response.academicperiod.ResponseAcademicPeriodInsert;
 import com.epiis.finalproject.dto.response.academicperiod.ResponseAcademicPeriodUpdate;
 
-@PreAuthorize("hasRole('ADMIN')")
 @RestController
 @RequestMapping(path = "intranet")
 public class AcademicPeriodController {
@@ -32,6 +31,7 @@ public class AcademicPeriodController {
 		this.businessAcademicPeriod = businessAcademicPeriod;
 	}
 	
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR')")
 	@PostMapping(path = "registeracademicperiod", consumes = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<ResponseAcademicPeriodInsert> insert(@Valid @RequestBody RequestAcademicPeriodInsert request){
 		ResponseAcademicPeriodInsert response = businessAcademicPeriod.insert(request);
@@ -41,18 +41,21 @@ public class AcademicPeriodController {
 		return ResponseEntity.ok(response);
 	}
 	
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR', 'PROFESSOR', 'PROFESOR', 'STUDENT', 'ESTUDIANTE')")
 	@GetMapping(path = "indexacademicperiod")
 	public ResponseEntity<Map<String, Object>> getAll(){
 		
 		return ResponseEntity.ok(businessAcademicPeriod.getAll());
 	}
 	
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR', 'PROFESSOR', 'PROFESOR', 'STUDENT', 'ESTUDIANTE')")
 	@GetMapping(path = "showacademicperiod/{idPeriod}")
 	public ResponseEntity<Map<String, Object>> getById(@PathVariable String idPeriod){
 		
 		return ResponseEntity.ok(businessAcademicPeriod.getById(idPeriod));
 	}
 	
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR')")
 	@DeleteMapping(path = "deleteacademicperiod/{idPeriod}")
 	public ResponseEntity<ResponseAcademicPeriodDeleteById> deleteById(@PathVariable String idPeriod){
 		ResponseAcademicPeriodDeleteById response = businessAcademicPeriod.deleteById(idPeriod);
@@ -60,6 +63,7 @@ public class AcademicPeriodController {
 		return ResponseEntity.ok(response);
 	}
 	
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR', 'PROFESSOR', 'PROFESOR', 'STUDENT', 'ESTUDIANTE')")
 	@GetMapping(path = "academicperiod/statuses")
 	public ResponseEntity<?> getStatuses(){
 		try {
@@ -77,6 +81,7 @@ public class AcademicPeriodController {
 		}
 	}
 	
+	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR')")
 	@PutMapping(path = "updateacademicperiod/{idPeriod}")
 	public ResponseEntity<ResponseAcademicPeriodUpdate> update(@PathVariable String idPeriod, @Valid @RequestBody RequestAcademicPeriodUpdate request){
 		ResponseAcademicPeriodUpdate response = businessAcademicPeriod.update(idPeriod, request);

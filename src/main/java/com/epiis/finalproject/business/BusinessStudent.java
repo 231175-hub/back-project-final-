@@ -32,7 +32,27 @@ import com.epiis.finalproject.entity.EntityStudent;
 import com.epiis.finalproject.entity.EntityUnits;
 import com.epiis.finalproject.entity.EntityUnitscore;
 import com.epiis.finalproject.entity.EntityUser;
-import com.epiis.finalproject.integration.KeycloakAdminService;
+import java.util.UUID;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import com.epiis.finalproject.dto.request.student.RequestStudentInsert;
+import com.epiis.finalproject.dto.request.student.RequestStudentUpdate;
+import com.epiis.finalproject.dto.request.user.RequestUserUpdatePassword;
+import com.epiis.finalproject.dto.response.student.ResponseStudentDeleteById;
+import com.epiis.finalproject.dto.response.student.ResponseStudentGetAll;
+import com.epiis.finalproject.dto.response.student.ResponseStudentGetById;
+import com.epiis.finalproject.dto.response.student.ResponseStudentInsert;
+import com.epiis.finalproject.dto.response.student.ResponseStudentSearch;
+import com.epiis.finalproject.dto.response.student.ResponseStudentUpdate;
+import com.epiis.finalproject.dto.response.user.ResponseUserUpdatePassword;
+import com.epiis.finalproject.entity.EntityAttendance;
+import com.epiis.finalproject.entity.EntityGroup;
+import com.epiis.finalproject.entity.EntityGroupStudent;
+import com.epiis.finalproject.entity.EntityRole;
+import com.epiis.finalproject.entity.EntitySchool;
+import com.epiis.finalproject.entity.EntityStudent;
+import com.epiis.finalproject.entity.EntityUnits;
+import com.epiis.finalproject.entity.EntityUnitscore;
+import com.epiis.finalproject.entity.EntityUser;
 import com.epiis.finalproject.repository.RepositoryAttendance;
 import com.epiis.finalproject.repository.RepositoryGroup;
 import com.epiis.finalproject.repository.RepositoryGroupStudent;
@@ -52,7 +72,7 @@ public class BusinessStudent {
 	private final RepositoryRole repositoryRole;
 	private final RepositorySchool repositorySchool;
 	private final RepositoryUser repositoryUser;
-	private final KeycloakAdminService keycloakAdminService;
+	private final PasswordEncoder passwordEncoder;
 	private final RepositoryGroup repositoryGroup;
 	private final RepositoryGroupStudent repositoryGroupStudent;
 	private final RepositoryUnits repositoryUnits;
@@ -63,7 +83,7 @@ public class BusinessStudent {
 			RepositoryUser repositoryUser, 
 			RepositoryRole repositoryRole, 
 			RepositorySchool repositorySchool, 
-			KeycloakAdminService keycloakAdminService, 
+			PasswordEncoder passwordEncoder, 
 			RepositoryGroup repositoryGroup, 
 			RepositoryGroupStudent repositoryGroupStudent,
 			RepositoryUnits repositoryUnits,
@@ -72,7 +92,7 @@ public class BusinessStudent {
 		this.repositoryUser = repositoryUser;
 		this.repositoryRole = repositoryRole;
 		this.repositorySchool = repositorySchool;
-		this.keycloakAdminService = keycloakAdminService;
+		this.passwordEncoder = passwordEncoder;
 		this.repositoryGroup = repositoryGroup;
 		this.repositoryGroupStudent = repositoryGroupStudent;
 		this.repositoryUnits = repositoryUnits;
@@ -82,25 +102,23 @@ public class BusinessStudent {
 	@Transactional
 	public ResponseStudentInsert insert(RequestStudentInsert request) {
 		ResponseStudentInsert response = new ResponseStudentInsert();
-	    String keycloakUserId = null;
 	    try {
 	        EntityRole roleStudent = repositoryRole.findByNameRole(EnumRoles.STUDENT.toString()).orElseThrow(() -> new RuntimeException("Error interno: El rol STUDENT no está configurado en la BD."));
 	        
 	        EntitySchool entitySchool = repositorySchool.findById(request.getIdSchool()).orElseThrow(() -> new RuntimeException("Error: La escuela especificada no existe en el sistema."));
 
-	        keycloakUserId = keycloakAdminService.createUser(
-	                request.getEmail(), 
-	                request.getFirstName(), 
-	                request.getSurName(), 
-	                request.getPassword(),
-	                EnumRoles.STUDENT.toString()
-	        );
+	        if (repositoryUser.findByEmail(request.getEmail()).isPresent()) {
+	        	throw new RuntimeException("El correo electrónico ya está registrado.");
+	        }
+
+	        String userId = UUID.randomUUID().toString();
 	    
 	        EntityUser entityUser = new EntityUser();
-	        entityUser.setIdUser(keycloakUserId); 
+	        entityUser.setIdUser(userId); 
 	        entityUser.setFirstName(request.getFirstName());
 	        entityUser.setSurName(request.getSurName());
 	        entityUser.setEmail(request.getEmail());
+	        entityUser.setPassword(passwordEncoder.encode(request.getPassword()));
 	        
 	        entityUser.setParentRole(roleStudent);
 	        entityUser.setCreatedAt(new java.sql.Date(new Date().getTime()));
@@ -109,7 +127,7 @@ public class BusinessStudent {
 	        repositoryUser.save(entityUser);
 	        
 	        EntityStudent entityStudent = new EntityStudent();
-	        entityStudent.setIdStudent(keycloakUserId); 
+	        entityStudent.setIdStudent(userId); 
 	        entityStudent.setCode(request.getCode());
 	        entityStudent.setTotalCredits(request.getTotalCredits());
 	        entityStudent.setStatus(EnumStudent.ACTIVE.toString());
@@ -123,17 +141,10 @@ public class BusinessStudent {
 	        repositoryStudent.save(entityStudent);
 	       
 	        response.success();
-	        response.getListMessage().add("Estudiante registrado correctamente en el sistema y Keycloak.");
+	        response.getListMessage().add("Estudiante registrado correctamente.");
 	        
 	    } catch (Exception e) {
 	        e.printStackTrace();
-	        if (keycloakUserId != null) {
-	            try {
-	                keycloakAdminService.deleteUser(keycloakUserId);
-	            } catch (Exception ex) {
-	                System.err.println("Error eliminando usuario de Keycloak durante el rollback: " + ex.getMessage());
-	            }
-	        }
 	        response.error();
 	        response.getListMessage().add("Error al registrar el estudiante: " + e.getMessage());
 	    }
