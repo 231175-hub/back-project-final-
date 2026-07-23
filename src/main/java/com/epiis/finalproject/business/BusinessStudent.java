@@ -64,6 +64,7 @@ import com.epiis.finalproject.repository.RepositoryUser;
 import com.epiis.finalproject.staticdata.EnumRoles;
 import com.epiis.finalproject.staticdata.EnumStudent;
 
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 
 @Service
@@ -77,6 +78,7 @@ public class BusinessStudent {
 	private final RepositoryGroupStudent repositoryGroupStudent;
 	private final RepositoryUnits repositoryUnits;
 	private final RepositoryAttendance repositoryAttendance;
+	private final EntityManager entityManager;
 	
 	public BusinessStudent(
 			RepositoryStudent repositoryStudent, 
@@ -87,7 +89,8 @@ public class BusinessStudent {
 			RepositoryGroup repositoryGroup, 
 			RepositoryGroupStudent repositoryGroupStudent,
 			RepositoryUnits repositoryUnits,
-			RepositoryAttendance repositoryAttendance) {
+			RepositoryAttendance repositoryAttendance,
+			EntityManager entityManager) {
 		this.repositoryStudent = repositoryStudent;
 		this.repositoryUser = repositoryUser;
 		this.repositoryRole = repositoryRole;
@@ -97,6 +100,7 @@ public class BusinessStudent {
 		this.repositoryGroupStudent = repositoryGroupStudent;
 		this.repositoryUnits = repositoryUnits;
 		this.repositoryAttendance = repositoryAttendance;
+		this.entityManager = entityManager;
 	}
 	
 	@Transactional
@@ -123,6 +127,12 @@ public class BusinessStudent {
 	        	return response;
 	        }
 
+	        if (repositoryStudent.findByCode(request.getCode()).isPresent()) {
+	        	response.error();
+	        	response.getListMessage().add("El código del estudiante ya está registrado.");
+	        	return response;
+	        }
+
 	        String userId = UUID.randomUUID().toString();
 	    
 	        EntityUser entityUser = new EntityUser();
@@ -136,8 +146,6 @@ public class BusinessStudent {
 	        entityUser.setCreatedAt(new java.sql.Date(new Date().getTime()));
 	        entityUser.setUpdatedAt(entityUser.getCreatedAt());
 	        
-	        repositoryUser.save(entityUser);
-	        
 	        EntityStudent entityStudent = new EntityStudent();
 	        entityStudent.setIdStudent(userId); 
 	        entityStudent.setCode(request.getCode());
@@ -150,7 +158,9 @@ public class BusinessStudent {
 	        entityStudent.setCreatedAt(entityUser.getCreatedAt());
 	        entityStudent.setUpdatedAt(entityUser.getCreatedAt());
 
-	        repositoryStudent.save(entityStudent);
+	        entityUser.setChildStudent(entityStudent); // Bidirectional association
+
+	        entityManager.persist(entityUser); // Persists both User and Student due to cascade
 	       
 	        response.success();
 	        response.getListMessage().add("Estudiante registrado correctamente.");

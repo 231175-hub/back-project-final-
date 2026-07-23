@@ -19,4 +19,6 @@ public interface RepositoryStudent extends JpaRepository<EntityStudent, String>{
 	
 	@Query("SELECT s FROM EntityStudent s JOIN s.parentUser u WHERE s.parentSchool.idSchool = :idSchool AND (LOWER(u.firstName) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(u.surName) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(s.code) LIKE LOWER(CONCAT('%', :query, '%')))")
     List<EntityStudent> searchStudentsByTermAndSchool(@Param("query") String query, @Param("idSchool") String idSchool, PageRequest pageRequest);
+
+	Optional<EntityStudent> findByCode(String code);
 }
