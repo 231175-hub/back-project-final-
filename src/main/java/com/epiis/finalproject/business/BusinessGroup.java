@@ -221,7 +221,7 @@ public class BusinessGroup {
             
             newGroups.add(group);
         }
-        repositoryGroup.saveAll(newGroups);
+        newGroups = repositoryGroup.saveAll(newGroups);
 
         List<EntityGroupStudent> assignmentsToSave = new ArrayList<>();
         int currentGroupIndex = 0;
