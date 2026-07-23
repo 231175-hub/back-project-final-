@@ -103,12 +103,24 @@ public class BusinessStudent {
 	public ResponseStudentInsert insert(RequestStudentInsert request) {
 		ResponseStudentInsert response = new ResponseStudentInsert();
 	    try {
-	        EntityRole roleStudent = repositoryRole.findByNameRole(EnumRoles.STUDENT.toString()).orElseThrow(() -> new RuntimeException("Error interno: El rol STUDENT no está configurado en la BD."));
+	        EntityRole roleStudent = repositoryRole.findByNameRole(EnumRoles.STUDENT.toString()).orElse(null);
+	        if (roleStudent == null) {
+	        	response.error();
+	        	response.getListMessage().add("Error interno: El rol STUDENT no está configurado en la BD.");
+	        	return response;
+	        }
 	        
-	        EntitySchool entitySchool = repositorySchool.findById(request.getIdSchool()).orElseThrow(() -> new RuntimeException("Error: La escuela especificada no existe en el sistema."));
+	        EntitySchool entitySchool = repositorySchool.findById(request.getIdSchool()).orElse(null);
+	        if (entitySchool == null) {
+	        	response.error();
+	        	response.getListMessage().add("Error: La escuela especificada no existe en el sistema.");
+	        	return response;
+	        }
 
 	        if (repositoryUser.findByEmail(request.getEmail()).isPresent()) {
-	        	throw new RuntimeException("El correo electrónico ya está registrado.");
+	        	response.error();
+	        	response.getListMessage().add("El correo electrónico ya está registrado.");
+	        	return response;
 	        }
 
 	        String userId = UUID.randomUUID().toString();

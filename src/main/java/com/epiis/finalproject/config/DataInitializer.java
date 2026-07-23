@@ -85,6 +85,32 @@ public class DataInitializer {
 				} catch (Exception ignored) {}
 			}
 
+			boolean hasProfessorRole = existingRoles.stream().anyMatch(r -> r.getNameRole() != null && 
+					(r.getNameRole().equalsIgnoreCase("PROFESSOR") || r.getNameRole().equalsIgnoreCase("Profesor") || r.getNameRole().equalsIgnoreCase("Docente")));
+			if (!hasProfessorRole) {
+				try {
+					EntityRole professorRole = new EntityRole();
+					professorRole.setIdRole(UUID.randomUUID().toString());
+					professorRole.setNameRole(EnumRoles.PROFESSOR.toString());
+					professorRole.setCreatedAt(new java.sql.Date(new Date().getTime()));
+					professorRole.setUpdatedAt(professorRole.getCreatedAt());
+					repositoryRole.save(professorRole);
+				} catch (Exception ignored) {}
+			}
+
+			boolean hasStudentRole = existingRoles.stream().anyMatch(r -> r.getNameRole() != null && 
+					(r.getNameRole().equalsIgnoreCase("STUDENT") || r.getNameRole().equalsIgnoreCase("Estudiante")));
+			if (!hasStudentRole) {
+				try {
+					EntityRole studentRole = new EntityRole();
+					studentRole.setIdRole(UUID.randomUUID().toString());
+					studentRole.setNameRole(EnumRoles.STUDENT.toString());
+					studentRole.setCreatedAt(new java.sql.Date(new Date().getTime()));
+					studentRole.setUpdatedAt(studentRole.getCreatedAt());
+					repositoryRole.save(studentRole);
+				} catch (Exception ignored) {}
+			}
+
 			// Flexible lookup for Admin role
 			EntityRole roleAdmin = repositoryRole.findAll().stream()
 					.filter(r -> r.getNameRole() != null && 

@@ -65,11 +65,17 @@ public class BusinessProfessor {
 	public ResponseProfessorInsert insert(RequestProfessorInsert request) {
 		ResponseProfessorInsert response = new ResponseProfessorInsert();
 		try {
-			EntityRole roleProfessor = repositoryRole.findByNameRole(EnumRoles.PROFESSOR.toString())
-					.orElseThrow(() -> new RuntimeException("Error interno: El rol PROFESSOR no está configurado en la base de datos."));
+			EntityRole roleProfessor = repositoryRole.findByNameRole(EnumRoles.PROFESSOR.toString()).orElse(null);
+			if (roleProfessor == null) {
+				response.error();
+				response.getListMessage().add("Error interno: El rol PROFESSOR no está configurado en la base de datos.");
+				return response;
+			}
 			
 			if (repositoryUser.findByEmail(request.getEmail()).isPresent()) {
-				throw new RuntimeException("El correo electrónico ya está registrado.");
+				response.error();
+				response.getListMessage().add("El correo electrónico ya está registrado.");
+				return response;
 			}
 
 			String userId = UUID.randomUUID().toString();
