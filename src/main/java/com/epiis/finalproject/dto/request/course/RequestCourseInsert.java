@@ -19,6 +19,4 @@ public class RequestCourseInsert {
 	private String category;
 	@NotBlank(message = "El campo idSchool es obligatorio")
 	private String idSchool;
-	@NotNull(message = "El campo units es obligatorio")
-	private List<Integer> units;
 }
