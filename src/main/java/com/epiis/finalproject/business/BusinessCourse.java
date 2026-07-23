@@ -118,6 +118,7 @@ public class BusinessCourse {
 			entityCourse.setCode(request.getCode());
 			entityCourse.setCredits(request.getCredits());
 			entityCourse.setNameCourse(request.getNameCourse());
+			entityCourse.setCategory(request.getCategory());
 			entityCourse.setParentSchool(entitySchool);
 			entityCourse.setUpdatedAt(new java.sql.Date(new Date().getTime()));
 
@@ -148,6 +149,8 @@ public class BusinessCourse {
 		return courses.stream().map(course -> new ResponseCourseSearch(
 				course.getIdCourse(),
 				course.getCode(),
-				course.getNameCourse())).collect(Collectors.toList());
+				course.getNameCourse(),
+				course.getCredits(),
+				course.getCategory())).collect(Collectors.toList());
 	}
 }

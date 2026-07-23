@@ -14,4 +14,6 @@ public class RequestCourseUpdate {
 	private String nameCourse;
 	@NotBlank(message = "El campo idSchool es obligatorio")
 	private String idSchool;
+	@NotBlank(message = "El campo category es obligatorio")
+	private String category;
 }
