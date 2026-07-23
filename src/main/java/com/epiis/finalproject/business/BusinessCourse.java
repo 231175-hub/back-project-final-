@@ -136,11 +136,13 @@ public class BusinessCourse {
 	}
 
 	public List<ResponseCourseSearch> searchCoursesForAutocomplete(String query, String idSchool) {
-		if (query == null || query.trim().isEmpty() || idSchool == null || idSchool.trim().isEmpty()) {
+		if (idSchool == null || idSchool.trim().isEmpty()) {
 			return Collections.emptyList();
 		}
 
-		List<EntityCourse> courses = repositoryCourse.searchCoursesByTermAndSchool(query.trim(), idSchool.trim(),
+		String term = query == null ? "" : query.trim();
+
+		List<EntityCourse> courses = repositoryCourse.searchCoursesByTermAndSchool(term, idSchool.trim(),
 				PageRequest.of(0, 10));
 
 		return courses.stream().map(course -> new ResponseCourseSearch(
