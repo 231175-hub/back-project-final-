@@ -177,14 +177,23 @@ public class BusinessGroup {
 	}
 	
 	@Transactional
-    public ResponseGroupStudentInsert createAndAssignGroups(RequestGroupAssignment request) {
+	public ResponseGroupStudentInsert createAndAssignGroups(RequestGroupAssignment request) {
+		ResponseGroupStudentInsert response = new ResponseGroupStudentInsert();
         
-        EntityAcademicPeriod activePeriod = repositoryAcademicperiod.findByStatus(EnumAcademicPeriod.ACTIVE.toString()).orElseThrow(() -> new RuntimeException("Error: No hay un periodo académico activo actualmente"));
+        Optional<EntityAcademicPeriod> optionalActivePeriod = repositoryAcademicperiod.findByStatus(EnumAcademicPeriod.ACTIVE.toString());
+        if (optionalActivePeriod.isEmpty()) {
+            response.error();
+            response.getListMessage().add("Error: No hay un periodo académico activo actualmente en el sistema.");
+            return response;
+        }
+        EntityAcademicPeriod activePeriod = optionalActivePeriod.get();
 
         List<EntityCourseEnrollment> unassignedStudents = repositoryCourseEnrollment.findUnassignedStudents(request.getIdCourse(), activePeriod.getIdPeriod());
 
         if (unassignedStudents.isEmpty()) {
-            throw new RuntimeException("No hay estudiantes pendientes por asignar en este curso.");
+            response.error();
+            response.getListMessage().add("No hay estudiantes pendientes por asignar en este curso.");
+            return response;
         }
 
         int totalStudents = unassignedStudents.size();
@@ -214,10 +223,6 @@ public class BusinessGroup {
         }
         repositoryGroup.saveAll(newGroups);
 
-        for (EntityGroup group : newGroups) {
-            createDefaultUnitsForGroup(group, currentDate);
-        }
-
         List<EntityGroupStudent> assignmentsToSave = new ArrayList<>();
         int currentGroupIndex = 0;
 
@@ -241,7 +246,6 @@ public class BusinessGroup {
         repositoryGroupStudent.saveAll(assignmentsToSave);
         repositoryCourseEnrollment.saveAll(unassignedStudents);
 
-        ResponseGroupStudentInsert response = new ResponseGroupStudentInsert();
         response.success();
         response.getListMessage().add("Se crearon " + numberOfGroups + " grupos y se asignaron " + totalStudents + " estudiantes al azar.");
         return response;

@@ -3,6 +3,7 @@ package com.epiis.finalproject.business;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -38,15 +39,32 @@ public class BusinessCourseEnrollment {
 				
 		List<EntityCourseEnrollment> listCourseEnrollments = new ArrayList<>();
 		
-		EntityAcademicPeriod entityAcademicPeriod  = repositoryAcademicperiod.findByStatus(EnumAcademicPeriod.ACTIVE.toString()).orElseThrow(() -> new RuntimeException("Error: No hay un periodo académico activo actualmente"));
+		Optional<EntityAcademicPeriod> optionalAcademicPeriod = repositoryAcademicperiod.findByStatus(EnumAcademicPeriod.ACTIVE.toString());
+		if (optionalAcademicPeriod.isEmpty()) {
+			response.error();
+			response.getListMessage().add("Error: No hay un periodo académico activo actualmente en el sistema.");
+			return response;
+		}
+		EntityAcademicPeriod entityAcademicPeriod = optionalAcademicPeriod.get();
 		
-		EntityStudent entityStudent = repositoryStudent.getReferenceById(request.getIdStudent());
+		Optional<EntityStudent> optionalStudent = repositoryStudent.findById(request.getIdStudent());
+		if (optionalStudent.isEmpty()) {
+			response.error();
+			response.getListMessage().add("Error: El estudiante especificado no existe en el sistema.");
+			return response;
+		}
+		EntityStudent entityStudent = optionalStudent.get();
 		
 		for(String idCourse : request.getCourses()) {
+			Optional<EntityCourse> optionalCourse = repositoryCourse.findById(idCourse);
+			if (optionalCourse.isEmpty()) {
+				response.error();
+				response.getListMessage().add("Error: Uno de los cursos seleccionados no existe en el sistema.");
+				return response;
+			}
+			EntityCourse entityCourse = optionalCourse.get();
+
 			EntityCourseEnrollment entityCourseEnrollment = new EntityCourseEnrollment();
-			
-			EntityCourse entityCourse = repositoryCourse.getReferenceById(idCourse);
-			
 			entityCourseEnrollment.setIdEnrollment(UUID.randomUUID().toString());
 			entityCourseEnrollment.setParentStudent(entityStudent);
 			entityCourseEnrollment.setParentCourse(entityCourse);
