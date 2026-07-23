@@ -61,7 +61,7 @@ public class BusinessSchool{
 			String fileName = UUID.randomUUID().toString()+ "_"+ originalFileName;
 			filePath = storagePath.resolve(fileName);
 			
-			String relativeRoute = filePath.toString();
+			String relativeRoute = filePath.toString().replace('\\', '/');
 			
 			entitySchool.setUrlImageSchool(relativeRoute);
 		}
@@ -169,7 +169,7 @@ public class BusinessSchool{
 					
 					Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 					
-					entitySchool.setUrlImageSchool(filePath.toString());
+					entitySchool.setUrlImageSchool(filePath.toString().replace('\\', '/'));
 				} catch (IOException e) {
 					response.error();
 					response.getListMessage().add("Error al guardar la imagen" + e.getMessage());

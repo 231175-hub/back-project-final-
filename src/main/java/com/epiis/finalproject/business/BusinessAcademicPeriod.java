@@ -30,6 +30,13 @@ public class BusinessAcademicPeriod {
 	public ResponseAcademicPeriodInsert insert(RequestAcademicPeriodInsert request) {
 		ResponseAcademicPeriodInsert response = new ResponseAcademicPeriodInsert();
 		
+		String validationError = validateDates(request.getStartDate(), request.getEndDate(), request.getStatus(), null);
+		if (validationError != null) {
+			response.error();
+			response.getListMessage().add(validationError);
+			return response;
+		}
+
 		EntityAcademicPeriod entityAcademicPeriod = new EntityAcademicPeriod();
 		
 		entityAcademicPeriod.setIdPeriod(UUID.randomUUID().toString());
@@ -58,6 +65,39 @@ public class BusinessAcademicPeriod {
 		return  response;
 	}
 	
+	private String validateDates(Date startDate, Date endDate, String status, String excludeId) {
+		if (startDate == null || endDate == null) {
+			return "Las fechas de inicio y fin son obligatorias.";
+		}
+		if (startDate.after(endDate) || startDate.equals(endDate)) {
+			return "La fecha de inicio debe ser anterior a la fecha de fin.";
+		}
+		
+		java.time.LocalDate start = new java.sql.Date(startDate.getTime()).toLocalDate();
+		java.time.LocalDate end = new java.sql.Date(endDate.getTime()).toLocalDate();
+		long days = java.time.temporal.ChronoUnit.DAYS.between(start, end);
+		if (days < 119) {
+			return "El periodo académico debe durar al menos 119 días desde la fecha de inicio (actualmente dura " + days + " días).";
+		}
+		
+		List<EntityAcademicPeriod> allPeriods = repositoryAcademicperiod.findAll();
+		for (EntityAcademicPeriod existing : allPeriods) {
+			if (excludeId != null && existing.getIdPeriod().equals(excludeId)) {
+				continue;
+			}
+			if ("Activo".equals(existing.getStatus()) || "Planificado".equals(existing.getStatus())) {
+				Date extStart = existing.getStartDate();
+				Date extEnd = existing.getEndDate();
+				
+				if (startDate.getTime() <= extEnd.getTime() && endDate.getTime() >= extStart.getTime()) {
+					String existingPeriodName = existing.getYearPeriod() + "-" + (existing.getNumberPeriod() == 0 ? "I" : existing.getNumberPeriod() == 1 ? "II" : "III");
+					return "El periodo académico se superpone con el periodo " + existingPeriodName + " que se encuentra " + existing.getStatus().toLowerCase() + ".";
+				}
+			}
+		}
+		return null;
+	}
+
 	public Map<String, Object> getAll() {
 		ResponseAcademicPeriodGetAll response = new ResponseAcademicPeriodGetAll();
 		
@@ -107,6 +147,13 @@ public class BusinessAcademicPeriod {
 		Optional<EntityAcademicPeriod> optional = repositoryAcademicperiod.findById(idPeriod);
 		
 		if (optional.isPresent()) {
+			String validationError = validateDates(request.getStartDate(), request.getEndDate(), request.getStatus(), idPeriod);
+			if (validationError != null) {
+				response.error();
+				response.getListMessage().add(validationError);
+				return response;
+			}
+
 			EntityAcademicPeriod entityAcademicPeriod = optional.get();
 			
 			if ("Activo".equals(request.getStatus())) {
