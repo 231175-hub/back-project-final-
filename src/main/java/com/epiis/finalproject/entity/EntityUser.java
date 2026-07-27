@@ -34,7 +34,7 @@ public class EntityUser {
 	@Column(name = "sur_name")
 	private String surName;
 
-	@Column(name = "email")
+	@Column(name = "email", unique = true)
 	private String email;
 
 	@com.fasterxml.jackson.annotation.JsonIgnore
