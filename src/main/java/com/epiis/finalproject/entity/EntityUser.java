@@ -48,6 +48,12 @@ public class EntityUser {
 	@Column(name = "urlImageProfile")
 	private String urlImageProfile;
 
+	@Column(name = "reset_password_token")
+	private String resetPasswordToken;
+
+	@Column(name = "reset_password_token_expiry")
+	private Date resetPasswordTokenExpiry;
+
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "id_role")
 	@JsonBackReference

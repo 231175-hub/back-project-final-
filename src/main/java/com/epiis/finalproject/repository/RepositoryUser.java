@@ -13,6 +13,7 @@ import java.util.Optional;
 public interface RepositoryUser extends JpaRepository<EntityUser, String>{
 	Optional<EntityUser> findByEmail(String email);
 	Optional<EntityUser> findFirstByEmail(String email);
+	Optional<EntityUser> findByResetPasswordToken(String resetPasswordToken);
 	
 	@Query("SELECT u FROM EntityUser u WHERE u.parentRole.nameRole = 'Profesor' AND (LOWER(u.firstName) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(u.surName) LIKE LOWER(CONCAT('%', :query, '%')))")
     List<EntityUser> searchProfessorsByTerm(@Param("query") String query, PageRequest pageRequest);
