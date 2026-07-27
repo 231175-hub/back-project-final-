@@ -2,6 +2,7 @@ package com.epiis.finalproject.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -11,7 +12,7 @@ public class EmailService {
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
     private final JavaMailSender mailSender;
 
-    public EmailService(JavaMailSender mailSender) {
+    public EmailService(@Autowired(required = false) JavaMailSender mailSender) {
         this.mailSender = mailSender;
     }
 
@@ -25,6 +26,10 @@ public class EmailService {
         System.out.println("=========================================================");
 
         try {
+            if (mailSender == null) {
+                log.warn("JavaMailSender is not configured. Email NOT sent to {}, but token is logged above.", toEmail);
+                return;
+            }
             SimpleMailMessage message = new SimpleMailMessage();
             message.setTo(toEmail);
             message.setSubject("Restablecer tu contraseña - Intranet UNAMBA");
