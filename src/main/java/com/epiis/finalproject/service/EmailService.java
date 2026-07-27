@@ -12,12 +12,15 @@ public class EmailService {
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
     private final JavaMailSender mailSender;
 
+    @org.springframework.beans.factory.annotation.Value("${app.frontend-url:http://localhost:4200}")
+    private String frontendUrl;
+
     public EmailService(@Autowired(required = false) JavaMailSender mailSender) {
         this.mailSender = mailSender;
     }
 
     public void sendResetPasswordEmail(String toEmail, String token) {
-        String resetUrl = "http://localhost:4200/reset-password?token=" + token;
+        String resetUrl = frontendUrl + "/reset-password?token=" + token;
 
         log.info("DEVELOPMENT LINK - Password Reset URL for {}: {}", toEmail, resetUrl);
         System.out.println("=========================================================");
