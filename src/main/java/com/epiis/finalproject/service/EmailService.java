@@ -25,27 +25,29 @@ public class EmailService {
         System.out.println(resetUrl);
         System.out.println("=========================================================");
 
-        try {
-            if (mailSender == null) {
-                log.warn("JavaMailSender is not configured. Email NOT sent to {}, but token is logged above.", toEmail);
-                return;
-            }
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(toEmail);
-            message.setSubject("Restablecer tu contraseña - Intranet UNAMBA");
-            message.setText("Hola,\n\n"
-                    + "Hemos recibido una solicitud para restablecer la contraseña de tu cuenta.\n"
-                    + "Haz clic en el siguiente enlace para restablecerla:\n\n"
-                    + resetUrl + "\n\n"
-                    + "Este enlace expirará en 15 minutos.\n"
-                    + "Si no solicitaste este cambio, por favor ignora este correo.\n\n"
-                    + "Atentamente,\n"
-                    + "Soporte Intranet UNAMBA");
+        java.util.concurrent.CompletableFuture.runAsync(() -> {
+            try {
+                if (mailSender == null) {
+                    log.warn("JavaMailSender is not configured. Email NOT sent to {}, but token is logged above.", toEmail);
+                    return;
+                }
+                SimpleMailMessage message = new SimpleMailMessage();
+                message.setTo(toEmail);
+                message.setSubject("Restablecer tu contraseña - Intranet UNAMBA");
+                message.setText("Hola,\n\n"
+                        + "Hemos recibido una solicitud para restablecer la contraseña de tu cuenta.\n"
+                        + "Haz clic en el siguiente enlace para restablecerla:\n\n"
+                        + resetUrl + "\n\n"
+                        + "Este enlace expirará en 15 minutos.\n"
+                        + "Si no solicitaste este cambio, por favor ignora este correo.\n\n"
+                        + "Atentamente,\n"
+                        + "Soporte Intranet UNAMBA");
 
-            mailSender.send(message);
-            log.info("Reset password email successfully sent to {}", toEmail);
-        } catch (Exception e) {
-            log.error("Failed to send email to {}. Error: {}. Make sure application.properties SMTP configurations are correct.", toEmail, e.getMessage());
-        }
+                mailSender.send(message);
+                log.info("Reset password email successfully sent to {}", toEmail);
+            } catch (Exception e) {
+                log.error("Failed to send email to {}. Error: {}. Make sure application.properties SMTP configurations are correct.", toEmail, e.getMessage());
+            }
+        });
     }
 }
