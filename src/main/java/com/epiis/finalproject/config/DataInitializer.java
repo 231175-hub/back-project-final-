@@ -15,10 +15,17 @@ import com.epiis.finalproject.entity.EntityUser;
 import com.epiis.finalproject.repository.RepositoryRole;
 import com.epiis.finalproject.repository.RepositoryUser;
 import com.epiis.finalproject.staticdata.EnumRoles;
+import org.springframework.beans.factory.annotation.Value;
 
 @Configuration
 public class DataInitializer {
 	private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
+
+	@Value("${app.default-user-password}")
+	private String defaultUserPassword;
+
+	@Value("${app.master-admin-password}")
+	private String masterPassword;
 
 	DataInitializer() {
 	}
@@ -82,9 +89,9 @@ public class DataInitializer {
 	}
 
 	private void syncLegacyUserPasswords(JdbcTemplate jdbcTemplate, PasswordEncoder passwordEncoder) {
-		// Assign default password '12345678' to legacy users in tuser if they have no password set
+		// Assign default password to legacy users in tuser if they have no password set
 		try {
-			String defaultHashedPassword = passwordEncoder.encode("12345678");
+			String defaultHashedPassword = passwordEncoder.encode(defaultUserPassword);
 			jdbcTemplate.update("UPDATE tuser SET password = ? WHERE password IS NULL OR password = ''", defaultHashedPassword);
 		} catch (Exception ignored) {
 			/* Intentionally ignored */
@@ -159,7 +166,6 @@ public class DataInitializer {
 
 		// Ensure Master Admin exists in the current database
 		String masterEmail = "admin@master.edu.pe";
-		String masterPassword = "adminmaster12345678";
 
 		try {
 			List<EntityUser> usersWithEmail = repositoryUser.findAll().stream()

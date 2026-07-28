@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
@@ -26,6 +26,7 @@ import com.epiis.finalproject.dto.response.student.ResponseStudentSearch;
 import com.epiis.finalproject.dto.response.student.ResponseStudentUpdate;
 import com.epiis.finalproject.dto.response.user.ResponseUserUpdatePassword;
 import com.epiis.finalproject.entity.EntityAttendance;
+import com.epiis.finalproject.entity.EntityCourse;
 import com.epiis.finalproject.entity.EntityGroup;
 import com.epiis.finalproject.entity.EntityGroupStudent;
 import com.epiis.finalproject.entity.EntityRole;
@@ -293,7 +294,7 @@ public class BusinessStudent {
                     student.getCode(),
                     fullName
             );
-        }).collect(Collectors.toList());
+        }).toList();
 	}
 	
 	private String formatGrade(Double val) {
@@ -304,7 +305,110 @@ public class BusinessStudent {
 		}
 		return String.format(java.util.Locale.US, "%.1f", val);
 	}
-	
+    
+    private double getRoundedScoreValue(Double score) {
+        return score < 0 ? 0.0 : Math.round(score);
+    }
+
+	private EntityUnitscore findScoreForUnitInStudent(List<EntityUnitscore> savedScores, EntityUnits u) {
+		for (EntityUnitscore s : savedScores) {
+			if (s.getParentUnits().getIdUnits().equals(u.getIdUnits())) {
+				return s;
+			}
+		}
+		return null;
+	}
+
+	private void processSingleUnitGrades(
+			EntityUnits u,
+			List<EntityUnitscore> savedScores,
+			EntityGroup entityGroup,
+			Map<String, Object> notasAlumno,
+			double[] sumOfUnitScoresRef,
+			boolean[] notasIncompletasRef) {
+		
+		EntityUnitscore score = findScoreForUnitInStudent(savedScores, u);
+
+		String ccStr = "-";
+		String cpStr = "-";
+		String caStr = "-";
+		String pfStr = "-";
+
+		if (score != null) {
+			ccStr = formatGrade(score.getConceptualScore() != null ? (double) Math.round(score.getConceptualScore()) : null);
+			cpStr = formatGrade(score.getPracticalScore() != null ? (double) Math.round(score.getPracticalScore()) : null);
+			caStr = formatGrade(score.getAttitudinalScore() != null ? (double) Math.round(score.getAttitudinalScore()) : null);
+			pfStr = formatGrade((double) Math.round(score.getScore()));
+
+			if (score.getConceptualScore() == null || score.getPracticalScore() == null || score.getAttitudinalScore() == null) {
+				notasIncompletasRef[0] = true;
+			} else {
+				double cc = getRoundedScoreValue(score.getConceptualScore());
+				double cp = getRoundedScoreValue(score.getPracticalScore());
+				double ca = getRoundedScoreValue(score.getAttitudinalScore());
+
+				double unitPf = cc * entityGroup.getConceptualWeight() +
+								cp * entityGroup.getPracticalWeight() +
+								ca * entityGroup.getAttitudinalWeight();
+				sumOfUnitScoresRef[0] += Math.round(unitPf);
+			}
+		} else {
+			notasIncompletasRef[0] = true;
+		}
+
+		notasAlumno.put("CC" + u.getNumberUnit(), ccStr);
+		notasAlumno.put("CP" + u.getNumberUnit(), cpStr);
+		notasAlumno.put("CA" + u.getNumberUnit(), caStr);
+		notasAlumno.put("PF" + u.getNumberUnit(), pfStr);
+	}
+
+	private Map<String, Object> calculateUnitGrades(
+			List<EntityUnits> units,
+			List<EntityUnitscore> savedScores,
+			EntityGroup entityGroup,
+			double[] sumOfUnitScoresRef,
+			boolean[] notasIncompletasRef) {
+		
+		Map<String, Object> notasAlumno = new HashMap<>();
+		double[] sum = { 0.0 };
+		boolean[] incomplete = { false };
+
+		for (EntityUnits u : units) {
+			processSingleUnitGrades(u, savedScores, entityGroup, notasAlumno, sum, incomplete);
+		}
+
+		sumOfUnitScoresRef[0] = sum[0];
+		notasIncompletasRef[0] = incomplete[0];
+		return notasAlumno;
+	}
+
+
+	private Map<String, Integer> calculateAttendanceSummary(List<EntityAttendance> attendances) {
+		int countA = 0;
+		int countT = 0;
+		int countF = 0;
+		int countJ = 0;
+
+		for (EntityAttendance att : attendances) {
+			if (att.getStatus() != null) {
+				switch (att.getStatus().trim().toUpperCase()) {
+					case "A": countA++; break;
+					case "T": countT++; break;
+					case "F": countF++; break;
+					case "J": countJ++; break;
+					default: break;
+				}
+			}
+		}
+
+		Map<String, Integer> resumenAsistencia = new HashMap<>();
+		resumenAsistencia.put("A", countA);
+		resumenAsistencia.put("T", countT);
+		resumenAsistencia.put("F", countF);
+		resumenAsistencia.put("J", countJ);
+		return resumenAsistencia;
+	}
+
 	public Map<String, Object> getGradesByGroup(String idStudentKeycloak, String idGroup) {
 		Map<String, Object> response = new HashMap<>();
 		
@@ -320,52 +424,12 @@ public class BusinessStudent {
 			List<EntityUnitscore> savedScores = gs.getChildUnitscore() != null ? gs.getChildUnitscore() : new ArrayList<>();
 			List<EntityUnits> units = repositoryUnits.findByParentGroupOrderByNumberUnitAsc(entityGroup);
 			
-			Map<String, Object> notasAlumno = new HashMap<>();
-			boolean notasIncompletas = false;
-			double sumOfUnitScores = 0;
-
-			for (EntityUnits u : units) {
-				EntityUnitscore score = null;
-				for (EntityUnitscore s : savedScores) {
-					if (s.getParentUnits().getIdUnits().equals(u.getIdUnits())) {
-						score = s;
-						break;
-					}
-				}
-
-				String ccStr = "-";
-				String cpStr = "-";
-				String caStr = "-";
-				String pfStr = "-";
-
-				if (score != null) {
-					ccStr = formatGrade(score.getConceptualScore() != null ? (double) Math.round(score.getConceptualScore()) : null);
-					cpStr = formatGrade(score.getPracticalScore() != null ? (double) Math.round(score.getPracticalScore()) : null);
-					caStr = formatGrade(score.getAttitudinalScore() != null ? (double) Math.round(score.getAttitudinalScore()) : null);
-					pfStr = formatGrade((double) Math.round(score.getScore()));
-
-					if (score.getConceptualScore() == null || score.getPracticalScore() == null || score.getAttitudinalScore() == null) {
-						notasIncompletas = true;
-					} else {
-						// Treat NSP (-1.0) as 0.0 for calculations, and round component grades
-						double cc = score.getConceptualScore() < 0 ? 0.0 : Math.round(score.getConceptualScore());
-						double cp = score.getPracticalScore() < 0 ? 0.0 : Math.round(score.getPracticalScore());
-						double ca = score.getAttitudinalScore() < 0 ? 0.0 : Math.round(score.getAttitudinalScore());
-
-						double unitPf = cc * entityGroup.getConceptualWeight() +
-										cp * entityGroup.getPracticalWeight() +
-										ca * entityGroup.getAttitudinalWeight();
-						sumOfUnitScores += Math.round(unitPf);
-					}
-				} else {
-					notasIncompletas = true;
-				}
-
-				notasAlumno.put("CC" + u.getNumberUnit(), ccStr);
-				notasAlumno.put("CP" + u.getNumberUnit(), cpStr);
-				notasAlumno.put("CA" + u.getNumberUnit(), caStr);
-				notasAlumno.put("PF" + u.getNumberUnit(), pfStr);
-			}
+			double[] sumOfUnitScoresRef = new double[1];
+			boolean[] notasIncompletasRef = new boolean[1];
+			Map<String, Object> notasAlumno = calculateUnitGrades(units, savedScores, entityGroup, sumOfUnitScoresRef, notasIncompletasRef);
+			
+			double sumOfUnitScores = sumOfUnitScoresRef[0];
+			boolean notasIncompletas = notasIncompletasRef[0];
 
 			if (notasIncompletas) {
 				notasAlumno.put("PPF", "-");
@@ -381,31 +445,15 @@ public class BusinessStudent {
 			response.put("notas", notasAlumno);
 
 			List<EntityAttendance> attendances = repositoryAttendance.findByParentGroupStudentIn(Arrays.asList(gs));
-			int countA = 0, countT = 0, countF = 0, countJ = 0;
-
-			for (EntityAttendance att : attendances) {
-				if (att.getStatus() != null) {
-					switch (att.getStatus().trim().toUpperCase()) {
-						case "A": countA++; break;
-						case "T": countT++; break;
-						case "F": countF++; break;
-						case "J": countJ++; break;
-					}
-				}
-			}
-
-			Map<String, Integer> resumenAsistencia = new HashMap<>();
-			resumenAsistencia.put("A", countA);
-			resumenAsistencia.put("T", countT);
-			resumenAsistencia.put("F", countF);
-			resumenAsistencia.put("J", countJ);
+			Map<String, Integer> resumenAsistencia = calculateAttendanceSummary(attendances);
 
 			response.put("asistencia", resumenAsistencia);
-			response.put("success", true);
+			response.put(KEY_SUCCESS, true);
 			
 		} catch (Exception e) {
 			e.printStackTrace();
-			response.put("error", "Error al procesar el registro: " + e.getMessage());
+			response.put(KEY_SUCCESS, false);
+			response.put(KEY_ERROR, "Error al procesar el registro: " + e.getMessage());
 		}
 		
 		return response;
@@ -421,51 +469,12 @@ public class BusinessStudent {
 			EntityGroup entityGroup = gs.getParentGroup();
 			List<EntityUnitscore> savedScores = gs.getChildUnitscore() != null ? gs.getChildUnitscore() : new ArrayList<>();
 			
-			Map<String, Object> notasAlumno = new HashMap<>();
-			boolean notasIncompletas = false;
-			double sumOfUnitScores = 0;
-
-			for (EntityUnits u : units) {
-				EntityUnitscore score = null;
-				for (EntityUnitscore s : savedScores) {
-					if (s.getParentUnits().getIdUnits().equals(u.getIdUnits())) {
-						score = s;
-						break;
-					}
-				}
-
-				String ccStr = "-";
-				String cpStr = "-";
-				String caStr = "-";
-				String pfStr = "-";
-
-				if (score != null) {
-					ccStr = formatGrade(score.getConceptualScore() != null ? (double) Math.round(score.getConceptualScore()) : null);
-					cpStr = formatGrade(score.getPracticalScore() != null ? (double) Math.round(score.getPracticalScore()) : null);
-					caStr = formatGrade(score.getAttitudinalScore() != null ? (double) Math.round(score.getAttitudinalScore()) : null);
-					pfStr = formatGrade((double) Math.round(score.getScore()));
-
-					if (score.getConceptualScore() == null || score.getPracticalScore() == null || score.getAttitudinalScore() == null) {
-						notasIncompletas = true;
-					} else {
-						double cc = score.getConceptualScore() < 0 ? 0.0 : Math.round(score.getConceptualScore());
-						double cp = score.getPracticalScore() < 0 ? 0.0 : Math.round(score.getPracticalScore());
-						double ca = score.getAttitudinalScore() < 0 ? 0.0 : Math.round(score.getAttitudinalScore());
-
-						double unitPf = cc * entityGroup.getConceptualWeight() +
-										cp * entityGroup.getPracticalWeight() +
-										ca * entityGroup.getAttitudinalWeight();
-						sumOfUnitScores += Math.round(unitPf);
-					}
-				} else {
-					notasIncompletas = true;
-				}
-
-				notasAlumno.put("CC" + u.getNumberUnit(), ccStr);
-				notasAlumno.put("CP" + u.getNumberUnit(), cpStr);
-				notasAlumno.put("CA" + u.getNumberUnit(), caStr);
-				notasAlumno.put("PF" + u.getNumberUnit(), pfStr);
-			}
+			double[] sumOfUnitScoresRef = new double[1];
+			boolean[] notasIncompletasRef = new boolean[1];
+			Map<String, Object> notasAlumno = calculateUnitGrades(units, savedScores, entityGroup, sumOfUnitScoresRef, notasIncompletasRef);
+			
+			double sumOfUnitScores = sumOfUnitScoresRef[0];
+			boolean notasIncompletas = notasIncompletasRef[0];
 
 			if (notasIncompletas) {
 				notasAlumno.put("PPF", "-");
@@ -480,33 +489,40 @@ public class BusinessStudent {
 
 			response.put("notas", notasAlumno);
 
-			int countA = 0, countT = 0, countF = 0, countJ = 0;
-			for (EntityAttendance att : attendances) {
-				if (att.getStatus() != null) {
-					switch (att.getStatus().trim().toUpperCase()) {
-						case "A": countA++; break;
-						case "T": countT++; break;
-						case "F": countF++; break;
-						case "J": countJ++; break;
-					}
-				}
-			}
-
-			Map<String, Integer> resumenAsistencia = new HashMap<>();
-			resumenAsistencia.put("A", countA);
-			resumenAsistencia.put("T", countT);
-			resumenAsistencia.put("F", countF);
-			resumenAsistencia.put("J", countJ);
+			Map<String, Integer> resumenAsistencia = calculateAttendanceSummary(attendances);
 
 			response.put("asistencia", resumenAsistencia);
-			response.put("success", true);
+			response.put(KEY_SUCCESS, true);
 			
 		} catch (Exception e) {
 			e.printStackTrace();
-			response.put("error", "Error al procesar el registro: " + e.getMessage());
+			response.put(KEY_SUCCESS, false);
+			response.put(KEY_ERROR, "Error al procesar el registro: " + e.getMessage());
 		}
 		
 		return response;
+	}
+
+	private void populateBoletaCourseInfo(Map<String, Object> boleta, EntityGroup grupo) {
+		EntityCourse course = grupo.getParentCourse();
+		String nombreCurso = "Curso sin nombre";
+		String codigoCurso = "N/A";
+		int creditos = 0;
+		String categoria = "N/A";
+
+		if (course != null) {
+			nombreCurso = course.getNameCourse() != null ? course.getNameCourse() : "Curso sin nombre";
+			codigoCurso = course.getCode() != null ? course.getCode() : "N/A";
+			creditos = course.getCredits();
+			categoria = course.getCategory() != null ? course.getCategory() : "N/A";
+		}
+
+		boleta.put("nombreCurso", nombreCurso);
+		boleta.put("codigoCurso", codigoCurso);
+		boleta.put("creditos", creditos);
+		boleta.put("categoria", categoria);
+		boleta.put("seccion", grupo.getNameGroup());
+		boleta.put("idGroup", grupo.getIdGroup());
 	}
 
 	public Map<String, Object> getAllBoletasForStudent(String idStudentKeycloak) {
@@ -517,13 +533,13 @@ public class BusinessStudent {
             List<EntityGroupStudent> enrollments = repositoryGroupStudent.findEnrollmentsWithGroupAndScoresByStudentId(idStudentKeycloak);
 
             if (enrollments == null || enrollments.isEmpty()) {
-                response.put("success", true);
-                response.put("message", "No estás matriculado en ningún curso este semestre.");
+                response.put(KEY_SUCCESS, true);
+                response.put(KEY_MESSAGE, "No estás matriculado en ningún curso este semestre.");
                 response.put("data", listaBoletas);
                 return response;
             }
 
-            List<EntityGroup> groups = enrollments.stream().map(EntityGroupStudent::getParentGroup).collect(Collectors.toList());
+            List<EntityGroup> groups = enrollments.stream().map(EntityGroupStudent::getParentGroup).toList();
             List<EntityUnits> allUnits = repositoryUnits.findByParentGroupInOrderByNumberUnitAsc(groups);
             List<EntityAttendance> allAttendances = repositoryAttendance.findByParentGroupStudentIn(enrollments);
 
@@ -542,32 +558,21 @@ public class BusinessStudent {
 
                 Map<String, Object> boletaDelCurso = this.getGradesByGroupStudentPreloaded(enrollment, units, attendances);
 
-                if (!boletaDelCurso.containsKey("error")) {
-                    String nombreCurso = (grupo.getParentCourse() != null) ? grupo.getParentCourse().getNameCourse() : "Curso sin nombre";
-                    String codigoCurso = (grupo.getParentCourse() != null) ? grupo.getParentCourse().getCode() : "N/A";
-                    int creditos = (grupo.getParentCourse() != null) ? grupo.getParentCourse().getCredits() : 0;
-                    String categoria = (grupo.getParentCourse() != null) ? grupo.getParentCourse().getCategory() : "N/A";
-
-                    boletaDelCurso.put("nombreCurso", nombreCurso);
-                    boletaDelCurso.put("codigoCurso", codigoCurso);
-                    boletaDelCurso.put("creditos", creditos);
-                    boletaDelCurso.put("categoria", categoria);
-                    boletaDelCurso.put("seccion", grupo.getNameGroup());
-                    boletaDelCurso.put("idGroup", grupo.getIdGroup());
-                    
+                if (!boletaDelCurso.containsKey(KEY_ERROR)) {
+                    populateBoletaCourseInfo(boletaDelCurso, grupo);
                     listaBoletas.add(boletaDelCurso);
                 } else {
-                    System.out.println("Aviso: " + boletaDelCurso.get("error") + " en el grupo " + grupo.getNameGroup());
+                    log.warn("Aviso: {} en el grupo {}", boletaDelCurso.get(KEY_ERROR), grupo.getNameGroup());
                 }
             }
 
-            response.put("success", true);
+            response.put(KEY_SUCCESS, true);
             response.put("data", listaBoletas);
 
         } catch (Exception e) {
             e.printStackTrace();
-            response.put("success", false);
-            response.put("error", "Error al cargar las boletas del semestre: " + e.getMessage());
+            response.put(KEY_SUCCESS, false);
+            response.put(KEY_ERROR, "Error al cargar las boletas del semestre: " + e.getMessage());
         }
 
         return response;

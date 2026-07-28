@@ -151,15 +151,7 @@ public class BusinessGroupRegister {
         }).toList();
     }
 
-    private void buildWeeksAndClassDates(
-            EntityGroup group,
-            EntityAcademicPeriod period,
-            ResponseGroupRegisterData response) {
-        
-        LocalDate startDate = LocalDate.now();
-        if (period != null && period.getStartDate() != null) {
-            startDate = period.getStartDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-        }
+    private List<DayOfWeek> getClassDays(EntityGroup group) {
         List<DayOfWeek> classDays = new ArrayList<>();
         if (group.getChildSchedule() != null) {
             for (EntitySchedule sch : group.getChildSchedule()) {
@@ -172,6 +164,19 @@ public class BusinessGroupRegister {
         if (classDays.isEmpty()) {
             classDays = Arrays.asList(DayOfWeek.TUESDAY, DayOfWeek.THURSDAY);
         }
+        return classDays;
+    }
+
+    private void buildWeeksAndClassDates(
+            EntityGroup group,
+            EntityAcademicPeriod period,
+            ResponseGroupRegisterData response) {
+        
+        LocalDate startDate = LocalDate.now();
+        if (period != null && period.getStartDate() != null) {
+            startDate = period.getStartDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        }
+        List<DayOfWeek> classDays = getClassDays(group);
         List<DayOfWeek> sortedDays = new ArrayList<>(classDays);
         Collections.sort(sortedDays);
 
@@ -369,6 +374,66 @@ public class BusinessGroupRegister {
         return response;
     }
 
+    private EntityUnitscore getOrCreateUnitScore(
+            RequestGroupRegisterSave.UnitScoreSaveData ussd,
+            EntityGroupStudent gs,
+            Date now) {
+        if (ussd.getIdUnitScore() != null && !ussd.getIdUnitScore().trim().isEmpty()) {
+            return repositoryUnitScore.findById(ussd.getIdUnitScore())
+                    .orElse(new EntityUnitscore());
+        }
+        
+        List<EntityUnitscore> existing = gs.getChildUnitscore();
+        if (existing != null) {
+            for (EntityUnitscore e : existing) {
+                if (e.getParentUnits().getIdUnits().equals(ussd.getIdUnits())) {
+                    return e;
+                }
+            }
+        }
+
+        EntityUnitscore scoreEntity = new EntityUnitscore();
+        scoreEntity.setIdUnitScore(UUID.randomUUID().toString());
+        scoreEntity.setParentGroupStudent(gs);
+        EntityUnits u = new EntityUnits();
+        u.setIdUnits(ussd.getIdUnits());
+        scoreEntity.setParentUnits(u);
+        scoreEntity.setCreatedAt(now);
+        return scoreEntity;
+    }
+
+    private Double[] parseTestGrades(String testGrades) {
+        Double t1 = null;
+        Double t2 = null;
+        if (testGrades != null && !testGrades.trim().isEmpty()) {
+            String[] split = testGrades.split(",");
+            if (split.length > 0) {
+                t1 = parseDoubleSilently(split[0]);
+            }
+            if (split.length > 1) {
+                t2 = parseDoubleSilently(split[1]);
+            }
+        }
+        return new Double[]{t1, t2};
+    }
+
+    private void logGradeChanges(
+            EntityUnitscore scoreEntity,
+            RequestGroupRegisterSave.UnitScoreSaveData ussd,
+            Double t1,
+            Double t2,
+            String currentUser,
+            Date now,
+            List<EntityGradeLog> auditLogs) {
+        String id = scoreEntity.getIdUnitScore();
+        logGradeChangeIfModified(id, "conceptualScore", scoreEntity.getConceptualScore(), ussd.getConceptualScore(), currentUser, now, auditLogs);
+        logGradeChangeIfModified(id, "practicalScore", scoreEntity.getPracticalScore(), ussd.getPracticalScore(), currentUser, now, auditLogs);
+        logGradeChangeIfModified(id, "test1Score", scoreEntity.getTest1Score(), t1, currentUser, now, auditLogs);
+        logGradeChangeIfModified(id, "test2Score", scoreEntity.getTest2Score(), t2, currentUser, now, auditLogs);
+        logGradeChangeIfModified(id, "attitudinalScore", scoreEntity.getAttitudinalScore(), ussd.getAttitudinalScore(), currentUser, now, auditLogs);
+        logGradeChangeIfModified(id, "score", scoreEntity.getScore(), ussd.getScore(), currentUser, now, auditLogs);
+    }
+
     private void saveStudentScores(
             RequestGroupRegisterSave.StudentSaveData ssd,
             EntityGroupStudent gs,
@@ -377,55 +442,14 @@ public class BusinessGroupRegister {
             List<EntityGradeLog> auditLogs) {
         
         for (RequestGroupRegisterSave.UnitScoreSaveData ussd : ssd.getUnitScores()) {
-            EntityUnitscore scoreEntity;
-            if (ussd.getIdUnitScore() != null && !ussd.getIdUnitScore().trim().isEmpty()) {
-                scoreEntity = repositoryUnitScore.findById(ussd.getIdUnitScore())
-                        .orElse(new EntityUnitscore());
-            } else {
-                // Check if it already exists in database
-                List<EntityUnitscore> existing = gs.getChildUnitscore();
-                EntityUnitscore match = null;
-                if (existing != null) {
-                    for (EntityUnitscore e : existing) {
-                        if (e.getParentUnits().getIdUnits().equals(ussd.getIdUnits())) {
-                            match = e;
-                            break;
-                        }
-                    }
-                }
-                if (match != null) {
-                    scoreEntity = match;
-                } else {
-                    scoreEntity = new EntityUnitscore();
-                    scoreEntity.setIdUnitScore(UUID.randomUUID().toString());
-                    scoreEntity.setParentGroupStudent(gs);
-                    EntityUnits u = new EntityUnits();
-                    u.setIdUnits(ussd.getIdUnits());
-                    scoreEntity.setParentUnits(u);
-                    scoreEntity.setCreatedAt(now);
-                }
-            }
+            EntityUnitscore scoreEntity = getOrCreateUnitScore(ussd, gs, now);
 
-            // Mapeo de sub-notas de exámenes a columnas legacy para compatibilidad
-            Double t1 = null;
-            Double t2 = null;
-            if (ussd.getTestGrades() != null && !ussd.getTestGrades().trim().isEmpty()) {
-                String[] split = ussd.getTestGrades().split(",");
-                if (split.length > 0) {
-                    t1 = parseDoubleSilently(split[0]);
-                }
-                if (split.length > 1) {
-                    t2 = parseDoubleSilently(split[1]);
-                }
-            }
+            Double[] testScores = parseTestGrades(ussd.getTestGrades());
+            Double t1 = testScores[0];
+            Double t2 = testScores[1];
 
             // Detect and log changes
-            logGradeChangeIfModified(scoreEntity.getIdUnitScore(), "conceptualScore", scoreEntity.getConceptualScore(), ussd.getConceptualScore(), currentUser, now, auditLogs);
-            logGradeChangeIfModified(scoreEntity.getIdUnitScore(), "practicalScore", scoreEntity.getPracticalScore(), ussd.getPracticalScore(), currentUser, now, auditLogs);
-            logGradeChangeIfModified(scoreEntity.getIdUnitScore(), "test1Score", scoreEntity.getTest1Score(), t1, currentUser, now, auditLogs);
-            logGradeChangeIfModified(scoreEntity.getIdUnitScore(), "test2Score", scoreEntity.getTest2Score(), t2, currentUser, now, auditLogs);
-            logGradeChangeIfModified(scoreEntity.getIdUnitScore(), "attitudinalScore", scoreEntity.getAttitudinalScore(), ussd.getAttitudinalScore(), currentUser, now, auditLogs);
-            logGradeChangeIfModified(scoreEntity.getIdUnitScore(), "score", scoreEntity.getScore(), ussd.getScore(), currentUser, now, auditLogs);
+            logGradeChanges(scoreEntity, ussd, t1, t2, currentUser, now, auditLogs);
 
             scoreEntity.setConceptualScore(ussd.getConceptualScore());
             scoreEntity.setPracticalScore(ussd.getPracticalScore());
@@ -442,6 +466,44 @@ public class BusinessGroupRegister {
         }
     }
 
+    private boolean handleDeleteIfStatusEmpty(RequestGroupRegisterSave.AttendanceSaveData asd) {
+        if (asd.getStatus() == null || asd.getStatus().trim().isEmpty()) {
+            if (asd.getIdAttendance() != null && !asd.getIdAttendance().trim().isEmpty()) {
+                repositoryAttendance.deleteById(asd.getIdAttendance());
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private EntityAttendance getOrCreateAttendance(
+            RequestGroupRegisterSave.AttendanceSaveData asd,
+            EntityGroupStudent gs,
+            Date attendanceDate,
+            Date now,
+            SimpleDateFormat df) {
+        if (asd.getIdAttendance() != null && !asd.getIdAttendance().trim().isEmpty()) {
+            return repositoryAttendance.findById(asd.getIdAttendance())
+                    .orElse(new EntityAttendance());
+        }
+
+        List<EntityAttendance> existing = repositoryAttendance.findByParentGroupStudentIn(Arrays.asList(gs));
+        if (existing != null) {
+            for (EntityAttendance e : existing) {
+                if (e.getAttendanceDate() != null && df.format(e.getAttendanceDate()).equals(asd.getDate())) {
+                    return e;
+                }
+            }
+        }
+
+        EntityAttendance attEntity = new EntityAttendance();
+        attEntity.setIdAttendance(UUID.randomUUID().toString());
+        attEntity.setParentGroupStudent(gs);
+        attEntity.setAttendanceDate(attendanceDate);
+        attEntity.setCreatedAt(now);
+        return attEntity;
+    }
+
     private void saveStudentAttendances(
             RequestGroupRegisterSave.StudentSaveData ssd,
             EntityGroupStudent gs,
@@ -449,40 +511,12 @@ public class BusinessGroupRegister {
             SimpleDateFormat df) throws java.text.ParseException {
         
         for (RequestGroupRegisterSave.AttendanceSaveData asd : ssd.getAttendances()) {
-            if (asd.getStatus() == null || asd.getStatus().trim().isEmpty()) {
-                // If it has id, delete it
-                if (asd.getIdAttendance() != null && !asd.getIdAttendance().trim().isEmpty()) {
-                    repositoryAttendance.deleteById(asd.getIdAttendance());
-                }
+            if (handleDeleteIfStatusEmpty(asd)) {
                 continue;
             }
 
-            EntityAttendance attEntity;
             Date attendanceDate = df.parse(asd.getDate());
-
-            if (asd.getIdAttendance() != null && !asd.getIdAttendance().trim().isEmpty()) {
-                attEntity = repositoryAttendance.findById(asd.getIdAttendance())
-                        .orElse(new EntityAttendance());
-            } else {
-                // Check if it already exists for student + date
-                List<EntityAttendance> existing = repositoryAttendance.findByParentGroupStudentIn(Arrays.asList(gs));
-                EntityAttendance match = null;
-                for (EntityAttendance e : existing) {
-                    if (e.getAttendanceDate() != null && df.format(e.getAttendanceDate()).equals(asd.getDate())) {
-                        match = e;
-                        break;
-                    }
-                }
-                if (match != null) {
-                    attEntity = match;
-                } else {
-                    attEntity = new EntityAttendance();
-                    attEntity.setIdAttendance(UUID.randomUUID().toString());
-                    attEntity.setParentGroupStudent(gs);
-                    attEntity.setAttendanceDate(attendanceDate);
-                    attEntity.setCreatedAt(now);
-                }
-            }
+            EntityAttendance attEntity = getOrCreateAttendance(asd, gs, attendanceDate, now, df);
 
             attEntity.setStatus(asd.getStatus().trim().toUpperCase());
             attEntity.setUpdatedAt(now);
@@ -561,6 +595,23 @@ public class BusinessGroupRegister {
         return response;
     }
 
+    private EntityUnitscore findScoreForUnit(List<EntityUnitscore> savedScores, EntityUnits u) {
+        for (EntityUnitscore s : savedScores) {
+            if (s.getParentUnits().getIdUnits().equals(u.getIdUnits())) {
+                return s;
+            }
+        }
+        return null;
+    }
+
+    private boolean isAnyComponentNull(EntityUnitscore score) {
+        return score.getConceptualScore() == null || score.getPracticalScore() == null || score.getAttitudinalScore() == null;
+    }
+
+    private double getRoundedScoreValue(Double val) {
+        return val < 0 ? 0.0 : Math.round(val);
+    }
+
     private int calculateStudentFinalScore(EntityGroupStudent gs, List<EntityUnits> units, EntityGroup group) {
         String code = gs.getParentStudent().getCode();
         List<EntityUnitscore> savedScores = gs.getChildUnitscore() != null ? gs.getChildUnitscore() : new ArrayList<>();
@@ -572,22 +623,16 @@ public class BusinessGroupRegister {
         double sumOfUnitScores = 0;
 
         for (EntityUnits u : units) {
-            EntityUnitscore score = null;
-            for (EntityUnitscore s : savedScores) {
-                if (s.getParentUnits().getIdUnits().equals(u.getIdUnits())) {
-                    score = s;
-                    break;
-                }
-            }
+            EntityUnitscore score = findScoreForUnit(savedScores, u);
 
-            if (score == null || score.getConceptualScore() == null || score.getPracticalScore() == null || score.getAttitudinalScore() == null) {
+            if (score == null || isAnyComponentNull(score)) {
                 throw new IllegalStateException("Faltan notas para el alumno " + code + " en la unidad " + u.getNumberUnit() + ".");
             }
 
             // Treat NSP (-1.0) as 0.0 for average calculations, and round component grades
-            double cc = score.getConceptualScore() < 0 ? 0.0 : Math.round(score.getConceptualScore());
-            double cp = score.getPracticalScore() < 0 ? 0.0 : Math.round(score.getPracticalScore());
-            double ca = score.getAttitudinalScore() < 0 ? 0.0 : Math.round(score.getAttitudinalScore());
+            double cc = getRoundedScoreValue(score.getConceptualScore());
+            double cp = getRoundedScoreValue(score.getPracticalScore());
+            double ca = getRoundedScoreValue(score.getAttitudinalScore());
 
             // Calculate Unit PF
             double unitPf = cc * group.getConceptualWeight() +
