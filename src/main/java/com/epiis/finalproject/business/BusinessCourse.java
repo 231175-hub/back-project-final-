@@ -151,6 +151,6 @@ public class BusinessCourse {
 				course.getCode(),
 				course.getNameCourse(),
 				course.getCredits(),
-				course.getCategory())).collect(Collectors.toList());
+				course.getCategory())).toList();
 	}
 }

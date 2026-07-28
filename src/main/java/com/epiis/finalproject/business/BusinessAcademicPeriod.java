@@ -21,6 +21,7 @@ import com.epiis.finalproject.staticdata.EnumAcademicPeriod;
 
 @Service
 public class BusinessAcademicPeriod {
+	private static final String STATUS_ACTIVE = "Activo";
 	private final RepositoryAcademicperiod repositoryAcademicperiod;
 	
 	public BusinessAcademicPeriod(RepositoryAcademicperiod repositoryAcademicperiod) {
@@ -30,7 +31,7 @@ public class BusinessAcademicPeriod {
 	public ResponseAcademicPeriodInsert insert(RequestAcademicPeriodInsert request) {
 		ResponseAcademicPeriodInsert response = new ResponseAcademicPeriodInsert();
 		
-		String validationError = validateDates(request.getStartDate(), request.getEndDate(), request.getStatus(), null);
+		String validationError = validateDates(request.getStartDate(), request.getEndDate(), null);
 		if (validationError != null) {
 			response.error();
 			response.getListMessage().add(validationError);
@@ -48,8 +49,8 @@ public class BusinessAcademicPeriod {
 		entityAcademicPeriod.setCreatedAt(new java.sql.Date(new Date().getTime()));
 		entityAcademicPeriod.setUpdatedAt(entityAcademicPeriod.getCreatedAt());
 		
-		if ("Activo".equals(request.getStatus())) {
-			Optional<EntityAcademicPeriod> activePeriod = repositoryAcademicperiod.findByStatus("Activo");
+		if (STATUS_ACTIVE.equals(request.getStatus())) {
+			Optional<EntityAcademicPeriod> activePeriod = repositoryAcademicperiod.findByStatus(STATUS_ACTIVE);
 			if (activePeriod.isPresent()) {
 				response.error();
 				response.getListMessage().add("Ya se encuentra registrado un semestre activo.");
@@ -65,7 +66,31 @@ public class BusinessAcademicPeriod {
 		return  response;
 	}
 	
-	private String validateDates(Date startDate, Date endDate, String status, String excludeId) {
+	private String getRomanNumeral(int numberPeriod) {
+		switch (numberPeriod) {
+			case 0: return "I";
+			case 1: return "II";
+			default: return "III";
+		}
+	}
+
+	private String checkOverlap(EntityAcademicPeriod existing, Date startDate, Date endDate, String excludeId) {
+		if (excludeId != null && existing.getIdPeriod().equals(excludeId)) {
+			return null;
+		}
+		if (STATUS_ACTIVE.equals(existing.getStatus()) || "Planificado".equals(existing.getStatus())) {
+			Date extStart = existing.getStartDate();
+			Date extEnd = existing.getEndDate();
+			
+			if (startDate.getTime() <= extEnd.getTime() && endDate.getTime() >= extStart.getTime()) {
+				String existingPeriodName = existing.getYearPeriod() + "-" + getRomanNumeral(existing.getNumberPeriod());
+				return "El periodo académico se superpone con el periodo " + existingPeriodName + " que se encuentra " + existing.getStatus().toLowerCase() + ".";
+			}
+		}
+		return null;
+	}
+
+	private String validateDates(Date startDate, Date endDate, String excludeId) {
 		if (startDate == null || endDate == null) {
 			return "Las fechas de inicio y fin son obligatorias.";
 		}
@@ -82,17 +107,9 @@ public class BusinessAcademicPeriod {
 		
 		List<EntityAcademicPeriod> allPeriods = repositoryAcademicperiod.findAll();
 		for (EntityAcademicPeriod existing : allPeriods) {
-			if (excludeId != null && existing.getIdPeriod().equals(excludeId)) {
-				continue;
-			}
-			if ("Activo".equals(existing.getStatus()) || "Planificado".equals(existing.getStatus())) {
-				Date extStart = existing.getStartDate();
-				Date extEnd = existing.getEndDate();
-				
-				if (startDate.getTime() <= extEnd.getTime() && endDate.getTime() >= extStart.getTime()) {
-					String existingPeriodName = existing.getYearPeriod() + "-" + (existing.getNumberPeriod() == 0 ? "I" : existing.getNumberPeriod() == 1 ? "II" : "III");
-					return "El periodo académico se superpone con el periodo " + existingPeriodName + " que se encuentra " + existing.getStatus().toLowerCase() + ".";
-				}
+			String overlapError = checkOverlap(existing, startDate, endDate, excludeId);
+			if (overlapError != null) {
+				return overlapError;
 			}
 		}
 		return null;
@@ -147,7 +164,7 @@ public class BusinessAcademicPeriod {
 		Optional<EntityAcademicPeriod> optional = repositoryAcademicperiod.findById(idPeriod);
 		
 		if (optional.isPresent()) {
-			String validationError = validateDates(request.getStartDate(), request.getEndDate(), request.getStatus(), idPeriod);
+			String validationError = validateDates(request.getStartDate(), request.getEndDate(), idPeriod);
 			if (validationError != null) {
 				response.error();
 				response.getListMessage().add(validationError);
@@ -156,8 +173,8 @@ public class BusinessAcademicPeriod {
 
 			EntityAcademicPeriod entityAcademicPeriod = optional.get();
 			
-			if ("Activo".equals(request.getStatus())) {
-				Optional<EntityAcademicPeriod> activePeriod = repositoryAcademicperiod.findByStatus("Activo");
+			if (STATUS_ACTIVE.equals(request.getStatus())) {
+				Optional<EntityAcademicPeriod> activePeriod = repositoryAcademicperiod.findByStatus(STATUS_ACTIVE);
 				if (activePeriod.isPresent() && !activePeriod.get().getIdPeriod().equals(idPeriod)) {
 					response.error();
 					response.getListMessage().add("Ya se encuentra registrado un semestre activo.");

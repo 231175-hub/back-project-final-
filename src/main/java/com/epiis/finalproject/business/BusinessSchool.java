@@ -71,7 +71,7 @@ public class BusinessSchool{
 		
 		repositorySchool.save(entitySchool);
 		
-		if (file != null && filePath != null) {
+		if (file != null) {
 			Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 		}
 		

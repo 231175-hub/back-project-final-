@@ -31,11 +31,10 @@ public class EmailService {
     public void sendResetPasswordEmail(String toEmail, String token) {
         String resetUrl = frontendUrl + "/reset-password?token=" + token;
 
-        log.info("DEVELOPMENT LINK - Password Reset URL for {}: {}", toEmail, resetUrl);
-        System.out.println("=========================================================");
-        System.out.println("DEVELOPMENT LINK: Password Reset URL for " + toEmail);
-        System.out.println(resetUrl);
-        System.out.println("=========================================================");
+        log.info("=========================================================");
+        log.info("DEVELOPMENT LINK: Password Reset URL for {}", toEmail);
+        log.info("{}", resetUrl);
+        log.info("=========================================================");
 
         CompletableFuture.runAsync(() -> {
             if (resendApiKey == null || resendApiKey.trim().isEmpty()) {

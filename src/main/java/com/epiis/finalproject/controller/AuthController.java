@@ -30,6 +30,9 @@ import jakarta.validation.Valid;
 @RequestMapping(path = "intranet/auth")
 public class AuthController {
 
+    private static final String KEY_SUCCESS = "success";
+    private static final String KEY_MESSAGE = "message";
+
     private final RepositoryUser repositoryUser;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
@@ -43,7 +46,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody RequestLogin request) {
+    public ResponseEntity<ResponseAuth> login(@Valid @RequestBody RequestLogin request) {
         Optional<EntityUser> optionalUser = repositoryUser.findFirstByEmail(request.getEmail());
 
         if (optionalUser.isEmpty()) {
@@ -79,7 +82,7 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<?> refresh(@Valid @RequestBody RequestRefreshToken request) {
+    public ResponseEntity<ResponseAuth> refresh(@Valid @RequestBody RequestRefreshToken request) {
         String refreshToken = request.getRefreshToken();
 
         try {
@@ -119,7 +122,7 @@ public class AuthController {
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<?> forgotPassword(@Valid @RequestBody RequestForgotPassword request) {
+    public ResponseEntity<Map<String, Object>> forgotPassword(@Valid @RequestBody RequestForgotPassword request) {
         Optional<EntityUser> optionalUser = repositoryUser.findFirstByEmail(request.getEmail());
 
         if (optionalUser.isPresent()) {
@@ -133,27 +136,27 @@ public class AuthController {
         }
 
         Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Si el correo está registrado en el sistema, recibirás instrucciones para restablecer tu contraseña.");
+        response.put(KEY_SUCCESS, true);
+        response.put(KEY_MESSAGE, "Si el correo está registrado en el sistema, recibirás instrucciones para restablecer tu contraseña.");
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<?> resetPassword(@Valid @RequestBody RequestResetPassword request) {
+    public ResponseEntity<Map<String, Object>> resetPassword(@Valid @RequestBody RequestResetPassword request) {
         Optional<EntityUser> optionalUser = repositoryUser.findByResetPasswordToken(request.getToken());
 
         Map<String, Object> response = new HashMap<>();
         if (optionalUser.isEmpty()) {
-            response.put("success", false);
-            response.put("message", "El enlace de restablecimiento es inválido.");
+            response.put(KEY_SUCCESS, false);
+            response.put(KEY_MESSAGE, "El enlace de restablecimiento es inválido.");
             return ResponseEntity.badRequest().body(response);
         }
 
         EntityUser user = optionalUser.get();
 
         if (user.getResetPasswordTokenExpiry() == null || user.getResetPasswordTokenExpiry().before(new Date())) {
-            response.put("success", false);
-            response.put("message", "El enlace de restablecimiento ha expirado.");
+            response.put(KEY_SUCCESS, false);
+            response.put(KEY_MESSAGE, "El enlace de restablecimiento ha expirado.");
             return ResponseEntity.badRequest().body(response);
         }
 
@@ -162,8 +165,8 @@ public class AuthController {
         user.setResetPasswordTokenExpiry(null);
         repositoryUser.save(user);
 
-        response.put("success", true);
-        response.put("message", "Contraseña restablecida correctamente.");
+        response.put(KEY_SUCCESS, true);
+        response.put(KEY_MESSAGE, "Contraseña restablecida correctamente.");
         return ResponseEntity.ok(response);
     }
 }
