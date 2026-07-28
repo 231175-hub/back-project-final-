@@ -38,39 +38,47 @@ public class DataInitializer {
 		};
 	}
 
+	private void executeSqlSilently(JdbcTemplate jdbcTemplate, String sql) {
+		try {
+			jdbcTemplate.execute(sql);
+		} catch (Exception ignored) {
+			/* Intentionally ignored as some tables or columns might not exist yet depending on database configuration state */
+		}
+	}
+
 	private void runDatabaseMigrations(JdbcTemplate jdbcTemplate) {
 		// Fix potential duplicate column constraints caused by Hibernate ddl-auto evolution
-		try { jdbcTemplate.execute("ALTER TABLE tuser MODIFY idUser VARCHAR(255) NULL"); } catch (Exception ignored) { /* Intentionally ignored */ }
-		try { jdbcTemplate.execute("ALTER TABLE tuser MODIFY id_user VARCHAR(255) NULL"); } catch (Exception ignored) { /* Intentionally ignored */ }
-		try { jdbcTemplate.execute("ALTER TABLE trole MODIFY idRole VARCHAR(255) NULL"); } catch (Exception ignored) { /* Intentionally ignored */ }
-		try { jdbcTemplate.execute("ALTER TABLE trole MODIFY id_role VARCHAR(255) NULL"); } catch (Exception ignored) { /* Intentionally ignored */ }
-		try { jdbcTemplate.execute("ALTER TABLE tprofessor MODIFY idProfessor VARCHAR(255) NULL"); } catch (Exception ignored) { /* Intentionally ignored */ }
-		try { jdbcTemplate.execute("ALTER TABLE tprofessor MODIFY id_professor VARCHAR(255) NULL"); } catch (Exception ignored) { /* Intentionally ignored */ }
-		try { jdbcTemplate.execute("ALTER TABLE tstudent MODIFY idStudent VARCHAR(255) NULL"); } catch (Exception ignored) { /* Intentionally ignored */ }
-		try { jdbcTemplate.execute("ALTER TABLE tstudent MODIFY id_student VARCHAR(255) NULL"); } catch (Exception ignored) { /* Intentionally ignored */ }
-		try { jdbcTemplate.execute("ALTER TABLE tschool MODIFY idSchool VARCHAR(255) NULL"); } catch (Exception ignored) { /* Intentionally ignored */ }
-		try { jdbcTemplate.execute("ALTER TABLE tschool MODIFY id_school VARCHAR(255) NULL"); } catch (Exception ignored) { /* Intentionally ignored */ }
+		executeSqlSilently(jdbcTemplate, "ALTER TABLE tuser MODIFY idUser VARCHAR(255) NULL");
+		executeSqlSilently(jdbcTemplate, "ALTER TABLE tuser MODIFY id_user VARCHAR(255) NULL");
+		executeSqlSilently(jdbcTemplate, "ALTER TABLE trole MODIFY idRole VARCHAR(255) NULL");
+		executeSqlSilently(jdbcTemplate, "ALTER TABLE trole MODIFY id_role VARCHAR(255) NULL");
+		executeSqlSilently(jdbcTemplate, "ALTER TABLE tprofessor MODIFY idProfessor VARCHAR(255) NULL");
+		executeSqlSilently(jdbcTemplate, "ALTER TABLE tprofessor MODIFY id_professor VARCHAR(255) NULL");
+		executeSqlSilently(jdbcTemplate, "ALTER TABLE tstudent MODIFY idStudent VARCHAR(255) NULL");
+		executeSqlSilently(jdbcTemplate, "ALTER TABLE tstudent MODIFY id_student VARCHAR(255) NULL");
+		executeSqlSilently(jdbcTemplate, "ALTER TABLE tschool MODIFY idSchool VARCHAR(255) NULL");
+		executeSqlSilently(jdbcTemplate, "ALTER TABLE tschool MODIFY id_school VARCHAR(255) NULL");
 
 		// Synchronize data between camelCase and snake_case columns for existing legacy records
 		// 1. tschool
-		try { jdbcTemplate.execute("UPDATE tschool SET id_school = idSchool WHERE (id_school IS NULL OR id_school = '') AND idSchool IS NOT NULL AND idSchool != ''"); } catch (Exception ignored) { /* Intentionally ignored */ }
-		try { jdbcTemplate.execute("UPDATE tschool SET idSchool = id_school WHERE (idSchool IS NULL OR idSchool = '') AND id_school IS NOT NULL AND id_school != ''"); } catch (Exception ignored) { /* Intentionally ignored */ }
-		try { jdbcTemplate.execute("UPDATE tschool SET name_school = nameSchool WHERE (name_school IS NULL OR name_school = '') AND nameSchool IS NOT NULL AND nameSchool != ''"); } catch (Exception ignored) { /* Intentionally ignored */ }
-		try { jdbcTemplate.execute("UPDATE tschool SET nameSchool = name_school WHERE (nameSchool IS NULL OR nameSchool = '') AND name_school IS NOT NULL AND name_school != ''"); } catch (Exception ignored) { /* Intentionally ignored */ }
+		executeSqlSilently(jdbcTemplate, "UPDATE tschool SET id_school = idSchool WHERE (id_school IS NULL OR id_school = '') AND idSchool IS NOT NULL AND idSchool != ''");
+		executeSqlSilently(jdbcTemplate, "UPDATE tschool SET idSchool = id_school WHERE (idSchool IS NULL OR idSchool = '') AND id_school IS NOT NULL AND id_school != ''");
+		executeSqlSilently(jdbcTemplate, "UPDATE tschool SET name_school = nameSchool WHERE (name_school IS NULL OR name_school = '') AND nameSchool IS NOT NULL AND nameSchool != ''");
+		executeSqlSilently(jdbcTemplate, "UPDATE tschool SET nameSchool = name_school WHERE (nameSchool IS NULL OR nameSchool = '') AND name_school IS NOT NULL AND name_school != ''");
 
 		// 2. tuser
-		try { jdbcTemplate.execute("UPDATE tuser SET id_user = idUser WHERE (id_user IS NULL OR id_user = '') AND idUser IS NOT NULL AND idUser != ''"); } catch (Exception ignored) { /* Intentionally ignored */ }
-		try { jdbcTemplate.execute("UPDATE tuser SET idUser = id_user WHERE (idUser IS NULL OR idUser = '') AND id_user IS NOT NULL AND id_user != ''"); } catch (Exception ignored) { /* Intentionally ignored */ }
-		try { jdbcTemplate.execute("UPDATE tuser SET first_name = firstName WHERE (first_name IS NULL OR first_name = '') AND firstName IS NOT NULL AND firstName != ''"); } catch (Exception ignored) { /* Intentionally ignored */ }
-		try { jdbcTemplate.execute("UPDATE tuser SET firstName = first_name WHERE (firstName IS NULL OR firstName = '') AND first_name IS NOT NULL AND first_name != ''"); } catch (Exception ignored) { /* Intentionally ignored */ }
-		try { jdbcTemplate.execute("UPDATE tuser SET sur_name = surName WHERE (sur_name IS NULL OR sur_name = '') AND surName IS NOT NULL AND surName != ''"); } catch (Exception ignored) { /* Intentionally ignored */ }
-		try { jdbcTemplate.execute("UPDATE tuser SET surName = sur_name WHERE (surName IS NULL OR surName = '') AND sur_name IS NOT NULL AND sur_name != ''"); } catch (Exception ignored) { /* Intentionally ignored */ }
+		executeSqlSilently(jdbcTemplate, "UPDATE tuser SET id_user = idUser WHERE (id_user IS NULL OR id_user = '') AND idUser IS NOT NULL AND idUser != ''");
+		executeSqlSilently(jdbcTemplate, "UPDATE tuser SET idUser = id_user WHERE (idUser IS NULL OR idUser = '') AND id_user IS NOT NULL AND id_user != ''");
+		executeSqlSilently(jdbcTemplate, "UPDATE tuser SET first_name = firstName WHERE (first_name IS NULL OR first_name = '') AND firstName IS NOT NULL AND firstName != ''");
+		executeSqlSilently(jdbcTemplate, "UPDATE tuser SET firstName = first_name WHERE (firstName IS NULL OR firstName = '') AND first_name IS NOT NULL AND first_name != ''");
+		executeSqlSilently(jdbcTemplate, "UPDATE tuser SET sur_name = surName WHERE (sur_name IS NULL OR sur_name = '') AND surName IS NOT NULL AND surName != ''");
+		executeSqlSilently(jdbcTemplate, "UPDATE tuser SET surName = sur_name WHERE (surName IS NULL OR surName = '') AND sur_name IS NOT NULL AND sur_name != ''");
 
 		// 3. trole
-		try { jdbcTemplate.execute("UPDATE trole SET id_role = idRole WHERE (id_role IS NULL OR id_role = '') AND idRole IS NOT NULL AND idRole != ''"); } catch (Exception ignored) { /* Intentionally ignored */ }
-		try { jdbcTemplate.execute("UPDATE trole SET idRole = id_role WHERE (idRole IS NULL OR idRole = '') AND id_role IS NOT NULL AND id_role != ''"); } catch (Exception ignored) { /* Intentionally ignored */ }
-		try { jdbcTemplate.execute("UPDATE trole SET name_role = nameRole WHERE (name_role IS NULL OR name_role = '') AND nameRole IS NOT NULL AND nameRole != ''"); } catch (Exception ignored) { /* Intentionally ignored */ }
-		try { jdbcTemplate.execute("UPDATE trole SET nameRole = name_role WHERE (nameRole IS NULL OR nameRole = '') AND name_role IS NOT NULL AND name_role != ''"); } catch (Exception ignored) { /* Intentionally ignored */ }
+		executeSqlSilently(jdbcTemplate, "UPDATE trole SET id_role = idRole WHERE (id_role IS NULL OR id_role = '') AND idRole IS NOT NULL AND idRole != ''");
+		executeSqlSilently(jdbcTemplate, "UPDATE trole SET idRole = id_role WHERE (idRole IS NULL OR idRole = '') AND id_role IS NOT NULL AND id_role != ''");
+		executeSqlSilently(jdbcTemplate, "UPDATE trole SET name_role = nameRole WHERE (name_role IS NULL OR name_role = '') AND nameRole IS NOT NULL AND nameRole != ''");
+		executeSqlSilently(jdbcTemplate, "UPDATE trole SET nameRole = name_role WHERE (nameRole IS NULL OR nameRole = '') AND name_role IS NOT NULL AND name_role != ''");
 	}
 
 	private void syncLegacyUserPasswords(JdbcTemplate jdbcTemplate, PasswordEncoder passwordEncoder) {
