@@ -4,7 +4,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class BusinessAuth {
-    public boolean sendPasswordResetEmail(String email) {
+    public boolean sendPasswordResetEmail() {
         // Password reset email handled by AuthController / local mail service
         return true;
     }

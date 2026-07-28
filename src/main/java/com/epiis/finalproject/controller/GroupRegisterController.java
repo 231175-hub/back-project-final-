@@ -17,6 +17,8 @@ public class GroupRegisterController {
 
     private final BusinessGroupRegister businessGroupRegister;
 
+    private static final String KEY_SUCCESS = "success";
+
     public GroupRegisterController(BusinessGroupRegister businessGroupRegister) {
         this.businessGroupRegister = businessGroupRegister;
     }
@@ -37,7 +39,7 @@ public class GroupRegisterController {
             @Valid @RequestBody RequestGroupRegisterSave request) {
         
         Map<String, Object> response = businessGroupRegister.saveGroupRegisterData(idGroup, request);
-        if (response.containsKey("success") && (Boolean) response.get("success")) {
+        if (Boolean.TRUE.equals(response.get(KEY_SUCCESS))) {
             return ResponseEntity.ok(response);
         } else {
             return ResponseEntity.badRequest().body(response);
@@ -47,7 +49,7 @@ public class GroupRegisterController {
     @PostMapping("/group-register/{idGroup}/close")
     public ResponseEntity<Map<String, Object>> closeGroupRegister(@PathVariable String idGroup) {
         Map<String, Object> response = businessGroupRegister.closeGroupRegister(idGroup);
-        if (response.containsKey("success") && (Boolean) response.get("success")) {
+        if (Boolean.TRUE.equals(response.get(KEY_SUCCESS))) {
             return ResponseEntity.ok(response);
         } else {
             return ResponseEntity.badRequest().body(response);

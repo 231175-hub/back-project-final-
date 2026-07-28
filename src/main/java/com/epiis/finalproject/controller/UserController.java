@@ -80,7 +80,7 @@ public class UserController {
 	}
 	
 	@PostMapping(path = "uploadimg", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<?> uploadMyProfileImage(@AuthenticationPrincipal Jwt jwt, @ModelAttribute RequestUserUpdateUploadImg request) {
+	public ResponseEntity<Object> uploadMyProfileImage(@AuthenticationPrincipal Jwt jwt, @ModelAttribute RequestUserUpdateUploadImg request) {
 		try {
 			String idUser = jwt.getSubject();
 			businessUser.updateProfileImage(idUser, request);

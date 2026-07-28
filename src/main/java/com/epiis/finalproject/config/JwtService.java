@@ -29,6 +29,8 @@ public class JwtService {
     @Value("${security.jwt.refresh-expiration-time:604800000}")
     private long refreshExpiration;
 
+    private static final String KEY_USER_ID = "userId";
+
     private SecretKey getSigningKey() {
         byte[] keyBytes = secretKey.getBytes(StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(keyBytes);
@@ -40,7 +42,7 @@ public class JwtService {
 
     public String extractUserId(String token) {
         Claims claims = extractAllClaims(token);
-        return claims.get("userId", String.class);
+        return claims.get(KEY_USER_ID, String.class);
     }
 
     public String extractRole(String token) {
@@ -55,7 +57,7 @@ public class JwtService {
 
     public String generateAccessToken(EntityUser user) {
         Map<String, Object> extraClaims = new HashMap<>();
-        extraClaims.put("userId", user.getIdUser());
+        extraClaims.put(KEY_USER_ID, user.getIdUser());
         extraClaims.put("email", user.getEmail());
         String roleName = user.getParentRole() != null ? user.getParentRole().getNameRole() : "ROLE_USER";
         extraClaims.put("role", roleName);
@@ -65,7 +67,7 @@ public class JwtService {
 
     public String generateRefreshToken(EntityUser user) {
         Map<String, Object> extraClaims = new HashMap<>();
-        extraClaims.put("userId", user.getIdUser());
+        extraClaims.put(KEY_USER_ID, user.getIdUser());
         extraClaims.put("type", "refresh");
         return buildToken(extraClaims, user.getEmail(), refreshExpiration);
     }

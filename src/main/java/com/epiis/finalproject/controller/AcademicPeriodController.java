@@ -27,6 +27,8 @@ import com.epiis.finalproject.dto.response.academicperiod.ResponseAcademicPeriod
 public class AcademicPeriodController {
 	private final BusinessAcademicPeriod businessAcademicPeriod;
 	
+	private static final String STR_ERROR = "error";
+
 	public AcademicPeriodController(BusinessAcademicPeriod businessAcademicPeriod) {
 		this.businessAcademicPeriod = businessAcademicPeriod;
 	}
@@ -35,7 +37,7 @@ public class AcademicPeriodController {
 	@PostMapping(path = "registeracademicperiod", consumes = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<ResponseAcademicPeriodInsert> insert(@Valid @RequestBody RequestAcademicPeriodInsert request){
 		ResponseAcademicPeriodInsert response = businessAcademicPeriod.insert(request);
-		if ("error".equals(response.getType())) {
+		if (STR_ERROR.equals(response.getType())) {
 			return ResponseEntity.badRequest().body(response);
 		}
 		return ResponseEntity.ok(response);
@@ -65,17 +67,17 @@ public class AcademicPeriodController {
 	
 	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR', 'PROFESSOR', 'PROFESOR', 'STUDENT', 'ESTUDIANTE')")
 	@GetMapping(path = "academicperiod/statuses")
-	public ResponseEntity<?> getStatuses(){
+	public ResponseEntity<Object> getStatuses(){
 		try {
 			java.util.List<String> list = java.util.Arrays.stream(com.epiis.finalproject.staticdata.EnumAcademicPeriod.values())
 				.map(com.epiis.finalproject.staticdata.EnumAcademicPeriod::toString)
 				.filter(status -> "Activo".equals(status) || "Planificado".equals(status))
-				.collect(java.util.stream.Collectors.toList());
+				.toList();
 			return ResponseEntity.ok(list);
-		} catch (Throwable t) {
+		} catch (Exception t) {
 			t.printStackTrace();
 			java.util.Map<String, String> err = new java.util.HashMap<>();
-			err.put("error", t.getClass().getName());
+			err.put(STR_ERROR, t.getClass().getName());
 			err.put("message", t.getMessage());
 			return ResponseEntity.status(500).body(err);
 		}
@@ -85,7 +87,7 @@ public class AcademicPeriodController {
 	@PutMapping(path = "updateacademicperiod/{idPeriod}")
 	public ResponseEntity<ResponseAcademicPeriodUpdate> update(@PathVariable String idPeriod, @Valid @RequestBody RequestAcademicPeriodUpdate request){
 		ResponseAcademicPeriodUpdate response = businessAcademicPeriod.update(idPeriod, request);
-		if ("error".equals(response.getType())) {
+		if (STR_ERROR.equals(response.getType())) {
 			return ResponseEntity.badRequest().body(response);
 		}
 		return ResponseEntity.ok(response);

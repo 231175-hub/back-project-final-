@@ -50,39 +50,42 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            if (jwtService.isTokenValid(jwt)) {
-                String role = jwtService.extractRole(jwt);
-                List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-                
-                if (role != null && !role.isBlank()) {
-                    String cleanRole = role.replace("ROLE_", "").trim().toUpperCase();
-                    if ("PROFESOR".equals(cleanRole) || "PROFESSOR".equals(cleanRole) || "DOCENTE".equals(cleanRole)) {
-                        authorities.add(new SimpleGrantedAuthority("ROLE_PROFESSOR"));
-                        authorities.add(new SimpleGrantedAuthority("ROLE_PROFESOR"));
-                    } else if ("ADMIN".equals(cleanRole) || "ADMINISTRADOR".equals(cleanRole)) {
-                        authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
-                        authorities.add(new SimpleGrantedAuthority("ROLE_ADMINISTRADOR"));
-                    } else if ("ESTUDIANTE".equals(cleanRole) || "STUDENT".equals(cleanRole)) {
-                        authorities.add(new SimpleGrantedAuthority("ROLE_STUDENT"));
-                        authorities.add(new SimpleGrantedAuthority("ROLE_ESTUDIANTE"));
-                    } else {
-                        authorities.add(new SimpleGrantedAuthority("ROLE_" + cleanRole));
-                    }
-                } else {
-                    authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
-                }
+        if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null && jwtService.isTokenValid(jwt)) {
+            List<SimpleGrantedAuthority> authorities = extractAuthorities(jwt);
 
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userEmail,
-                        null,
-                        authorities
-                );
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
-            }
+            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                    userEmail,
+                    null,
+                    authorities
+            );
+            authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            SecurityContextHolder.getContext().setAuthentication(authToken);
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private List<SimpleGrantedAuthority> extractAuthorities(String jwt) {
+        String role = jwtService.extractRole(jwt);
+        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+        
+        if (role != null && !role.isBlank()) {
+            String cleanRole = role.replace("ROLE_", "").trim().toUpperCase();
+            if ("PROFESOR".equals(cleanRole) || "PROFESSOR".equals(cleanRole) || "DOCENTE".equals(cleanRole)) {
+                authorities.add(new SimpleGrantedAuthority("ROLE_PROFESSOR"));
+                authorities.add(new SimpleGrantedAuthority("ROLE_PROFESOR"));
+            } else if ("ADMIN".equals(cleanRole) || "ADMINISTRADOR".equals(cleanRole)) {
+                authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+                authorities.add(new SimpleGrantedAuthority("ROLE_ADMINISTRADOR"));
+            } else if ("ESTUDIANTE".equals(cleanRole) || "STUDENT".equals(cleanRole)) {
+                authorities.add(new SimpleGrantedAuthority("ROLE_STUDENT"));
+                authorities.add(new SimpleGrantedAuthority("ROLE_ESTUDIANTE"));
+            } else {
+                authorities.add(new SimpleGrantedAuthority("ROLE_" + cleanRole));
+            }
+        } else {
+            authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+        }
+        return authorities;
     }
 }

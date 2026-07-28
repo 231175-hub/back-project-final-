@@ -31,15 +31,17 @@ public class MeController {
 		this.businessUser = businessUser;
 	}
 	
+	private static final String KEY_ERROR = "error";
+	
 	@Transactional(readOnly = true)
 	@GetMapping(path = "me")
-	public Map<String, Object> ObtainMyProfile() {
+	public Map<String, Object> obtainMyProfile() {
 		Map<String, Object> profile = new HashMap<>();
 		
 		try {
 			Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 			if (authentication == null || !authentication.isAuthenticated()) {
-				profile.put("error", "Usuario no autenticado");
+				profile.put(KEY_ERROR, "Usuario no autenticado");
 				return profile;
 			}
 
@@ -59,12 +61,12 @@ public class MeController {
 					profile.put("role", "Sin Rol");
 				}
 			} else {
-				profile.put("error", "No se pudo cargar el perfil local del usuario.");
+				profile.put(KEY_ERROR, "No se pudo cargar el perfil local del usuario.");
 				profile.put("email", userEmail);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			profile.put("error", "Error interno al cargar perfil: " + e.getMessage());
+			profile.put(KEY_ERROR, "Error interno al cargar perfil: " + e.getMessage());
 		}
 
 		return profile;

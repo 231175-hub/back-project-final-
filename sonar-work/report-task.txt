@@ -1,0 +1,6 @@
+projectKey=mi-proyecto-backend
+serverUrl=http://localhost:9000
+serverVersion=26.4.0.121862
+dashboardUrl=http://localhost:9000/dashboard?id=mi-proyecto-backend
+ceTaskId=2b5e7c26-9733-4b4f-b208-1da68bb6de6e
+ceTaskUrl=http://localhost:9000/api/ce/task?id=2b5e7c26-9733-4b4f-b208-1da68bb6de6e

@@ -32,13 +32,14 @@ public class BusinessSchool{
 	private final RepositorySchool repositorySchool;
 	
 	private String storageDir = "storage";
+	private static final String DIR_IMAGE_SCHOOL = "imageSchool";
 	
 	public BusinessSchool(RepositorySchool repositorySchool) {
 		this.repositorySchool = repositorySchool;
 	}
 	
 	@Transactional
-	public ResponseSchoolInsert insert(RequestSchoolInsert request) throws Exception {
+	public ResponseSchoolInsert insert(RequestSchoolInsert request) throws java.io.IOException {
 		ResponseSchoolInsert response = new ResponseSchoolInsert();
 		
 		EntitySchool entitySchool = new EntitySchool();
@@ -46,7 +47,7 @@ public class BusinessSchool{
 		entitySchool.setIdSchool(UUID.randomUUID().toString());
 		entitySchool.setNameSchool(request.getNameSchool());
 		
-		Path storagePath = Paths.get(storageDir, "imageSchool", request.getNameSchool());
+		Path storagePath = Paths.get(storageDir, DIR_IMAGE_SCHOOL, request.getNameSchool());
 		
 		if (!Files.exists(storagePath)) {
 			Files.createDirectories(storagePath);
@@ -113,7 +114,7 @@ public class BusinessSchool{
 		return res;
 	}
 	
-	public ResponseSchoolDeleteById deleteById(String idSchool) throws Exception {
+	public ResponseSchoolDeleteById deleteById(String idSchool) throws java.io.IOException {
 		ResponseSchoolDeleteById response = new ResponseSchoolDeleteById();
 		
 		Optional<EntitySchool> optional = repositorySchool.findById(idSchool);
@@ -121,7 +122,7 @@ public class BusinessSchool{
 		if (optional.isPresent()) {
 			EntitySchool entitySchool = optional.get();
 			
-			Path storagePath = Paths.get(storageDir, "imageSchool", entitySchool.getNameSchool());
+			Path storagePath = Paths.get(storageDir, DIR_IMAGE_SCHOOL, entitySchool.getNameSchool());
 			
 			if (Files.exists(storagePath)) {
 				try (var paths = Files.walk(storagePath)) {
@@ -158,7 +159,7 @@ public class BusinessSchool{
 						Files.deleteIfExists(oldFilePath);
 					}
 					
-					Path storagePath = Paths.get(storageDir, "imageSchool", idSchool);
+					Path storagePath = Paths.get(storageDir, DIR_IMAGE_SCHOOL, idSchool);
 					if (!Files.exists(storagePath)) {
 						Files.createDirectories(storagePath);
 					}

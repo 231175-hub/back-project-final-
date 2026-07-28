@@ -28,6 +28,11 @@ import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 @Service
 public class BusinessExportPdf {
 
+    private static final String DEFAULT_CAREER = "GENERAL";
+    private static final String KEY_CAREER = "career";
+    private static final String KEY_FULL_NAME = "fullName";
+    private static final String KEY_STUDENT = "student";
+
     private final BusinessStudent businessStudent;
     private final TemplateEngine templateEngine;
     private final RepositoryStudent repositoryStudent; 
@@ -65,7 +70,7 @@ public class BusinessExportPdf {
     public byte[] generatePdfByUserEmail(String email) {
         EntityStudent student = findStudentByEmailOrId(email);
         if (student == null) {
-            throw new RuntimeException("Estudiante no encontrado para la cuenta actual.");
+            throw new IllegalArgumentException("Estudiante no encontrado para la cuenta actual.");
         }
         return generatePdf(student.getIdStudent());
     }
@@ -73,7 +78,7 @@ public class BusinessExportPdf {
     public byte[] generateHistorialPdfByUserEmail(String email) {
         EntityStudent student = findStudentByEmailOrId(email);
         if (student == null) {
-            throw new RuntimeException("Estudiante no encontrado para la cuenta actual.");
+            throw new IllegalArgumentException("Estudiante no encontrado para la cuenta actual.");
         }
         return generateHistorialPdf(student.getIdStudent());
     }
@@ -81,7 +86,7 @@ public class BusinessExportPdf {
     public byte[] generateSchedulePdfByUserEmail(String email) {
         EntityStudent student = findStudentByEmailOrId(email);
         if (student == null) {
-            throw new RuntimeException("Estudiante no encontrado para la cuenta actual.");
+            throw new IllegalArgumentException("Estudiante no encontrado para la cuenta actual.");
         }
         return generateSchedulePdf(student.getIdStudent());
     }
@@ -104,10 +109,10 @@ public class BusinessExportPdf {
         if (estudiante != null) {
             String fullName = (estudiante.getParentUser().getSurName() != null ? estudiante.getParentUser().getSurName() : "") + " " + 
                              (estudiante.getParentUser().getFirstName() != null ? estudiante.getParentUser().getFirstName() : "");
-            String career = estudiante.getParentSchool() != null ? estudiante.getParentSchool().getNameSchool() : "GENERAL";
+            String career = estudiante.getParentSchool() != null ? estudiante.getParentSchool().getNameSchool() : DEFAULT_CAREER;
 
-            studentData.put("fullName", fullName.toUpperCase()); 
-            studentData.put("career", career.toUpperCase());
+            studentData.put(KEY_FULL_NAME, fullName.toUpperCase()); 
+            studentData.put(KEY_CAREER, career.toUpperCase());
             studentData.put("code", estudiante.getCode() != null ? estudiante.getCode() : ""); 
             studentData.put("semester", semestreActual); 
             
@@ -115,7 +120,7 @@ public class BusinessExportPdf {
         }
 
         Context context = new Context();
-        context.setVariable("student", studentData);
+        context.setVariable(KEY_STUDENT, studentData);
         context.setVariables(data);
         context.setVariable("totalCredits", totalCredits); 
 
@@ -128,14 +133,14 @@ public class BusinessExportPdf {
             builder.run();
             return os.toByteArray();
         } catch (Exception e) {
-            throw new RuntimeException("Error generating PDF", e);
+            throw new IllegalStateException("Error generating PDF", e);
         }
     }
     
     public byte[] generateHistorialPdf(String idStudentKeycloak) {
         EntityStudent estudiante = findStudentByEmailOrId(idStudentKeycloak);
         if (estudiante == null) {
-            throw new RuntimeException("Estudiante no encontrado");
+            throw new IllegalArgumentException("Estudiante no encontrado");
         }
         String studentId = estudiante.getIdStudent();
 
@@ -169,12 +174,12 @@ public class BusinessExportPdf {
         Map<String, String> studentData = new HashMap<>();
         String fullName = (estudiante.getParentUser().getSurName() != null ? estudiante.getParentUser().getSurName() : "") + " " + 
                          (estudiante.getParentUser().getFirstName() != null ? estudiante.getParentUser().getFirstName() : "");
-        studentData.put("fullName", fullName.toUpperCase()); 
-        studentData.put("career", estudiante.getParentSchool() != null ? estudiante.getParentSchool().getNameSchool().toUpperCase() : "GENERAL");
+        studentData.put(KEY_FULL_NAME, fullName.toUpperCase()); 
+        studentData.put(KEY_CAREER, estudiante.getParentSchool() != null ? estudiante.getParentSchool().getNameSchool().toUpperCase() : DEFAULT_CAREER);
         studentData.put("code", estudiante.getCode() != null ? estudiante.getCode() : "");
       
         Context context = new Context();
-        context.setVariable("student", studentData);
+        context.setVariable(KEY_STUDENT, studentData);
         context.setVariable("historial", historialAgrupado);
         context.setVariable("totalCreditosAprobados", totalCreditosAprobados);
 
@@ -187,14 +192,14 @@ public class BusinessExportPdf {
             builder.run();
             return os.toByteArray();
         } catch (Exception e) {
-            throw new RuntimeException("Error al generar el Historial en PDF", e);
+            throw new IllegalStateException("Error al generar el Historial en PDF", e);
         }
     }
     
     public byte[] generateSchedulePdf(String idStudentKeycloak) {
 		EntityStudent estudiante = findStudentByEmailOrId(idStudentKeycloak);
 		if (estudiante == null) {
-			throw new RuntimeException("Estudiante no encontrado");
+			throw new IllegalArgumentException("Estudiante no encontrado");
 		}
 		String studentId = estudiante.getIdStudent();
 
@@ -203,8 +208,8 @@ public class BusinessExportPdf {
 		Map<String, String> studentData = new HashMap<>();
 		String fullName = (estudiante.getParentUser().getSurName() != null ? estudiante.getParentUser().getSurName() : "") + " " + 
                          (estudiante.getParentUser().getFirstName() != null ? estudiante.getParentUser().getFirstName() : "");
-		studentData.put("fullName", fullName.toUpperCase()); 
-		studentData.put("career", estudiante.getParentSchool() != null ? estudiante.getParentSchool().getNameSchool().toUpperCase() : "GENERAL");
+		studentData.put(KEY_FULL_NAME, fullName.toUpperCase()); 
+		studentData.put(KEY_CAREER, estudiante.getParentSchool() != null ? estudiante.getParentSchool().getNameSchool().toUpperCase() : DEFAULT_CAREER);
 		studentData.put("code", estudiante.getCode() != null ? estudiante.getCode() : "");
 		
 		EntityAcademicPeriod periodoActivo = repositoryAcademicPeriod.findByStatus("Activo").orElse(null);
@@ -217,58 +222,16 @@ public class BusinessExportPdf {
 
 		List<String> daysOfWeek = Arrays.asList("Lunes", "Martes", "Miércoles", "Jueves", "Viernes");
 
-		Map<String, List<ResponseScheduleGetAll>> activeHourly = new HashMap<>();
-		for (ResponseScheduleGetAll lesson : scheduleList) {
-			int startHour = Integer.parseInt(lesson.startTime().split(":")[0]);
-			int endHour = Integer.parseInt(lesson.endTime().split(":")[0]);
-
-			for (int h = startHour; h < endHour; h++) {
-				String key = lesson.dayWeek() + "-" + h;
-				activeHourly.computeIfAbsent(key, k -> new ArrayList<>()).add(lesson);
-			}
-		}
+		Map<String, List<ResponseScheduleGetAll>> activeHourly = computeActiveHourly(scheduleList);
 
 		Map<String, List<ResponseScheduleGetAll>> customSchedule = new HashMap<>();
 		Map<String, Boolean> skipCells = new HashMap<>();
 		Map<String, Integer> durations = new HashMap<>();
 
-		for (ResponseScheduleGetAll lesson : scheduleList) {
-			int startHour = Integer.parseInt(lesson.startTime().split(":")[0]);
-			int endHour = Integer.parseInt(lesson.endTime().split(":")[0]);
-
-			boolean hasConflict = false;
-			for (int h = startHour; h < endHour; h++) {
-				String key = lesson.dayWeek() + "-" + h;
-				List<ResponseScheduleGetAll> activeList = activeHourly.get(key);
-				if (activeList != null && activeList.size() > 1) {
-					hasConflict = true;
-					break;
-				}
-			}
-
-			if (!hasConflict) {
-				String cellKey = lesson.dayWeek() + "-" + startHour;
-				List<ResponseScheduleGetAll> list = new ArrayList<>();
-				list.add(lesson);
-				customSchedule.put(cellKey, list);
-				durations.put(cellKey, endHour - startHour);
-
-				for (int h = startHour + 1; h < endHour; h++) {
-					skipCells.put(lesson.dayWeek() + "-" + h, true);
-				}
-			} else {
-				for (int h = startHour; h < endHour; h++) {
-					String cellKey = lesson.dayWeek() + "-" + h;
-					if (!customSchedule.containsKey(cellKey)) {
-						customSchedule.put(cellKey, activeHourly.get(cellKey));
-						durations.put(cellKey, 1);
-					}
-				}
-			}
-		}
+		processScheduleList(scheduleList, activeHourly, customSchedule, skipCells, durations);
 
 		Context context = new Context();
-		context.setVariable("student", studentData);
+		context.setVariable(KEY_STUDENT, studentData);
 		context.setVariable("hours", hours);
 		context.setVariable("daysOfWeek", daysOfWeek);
 		context.setVariable("customSchedule", customSchedule);
@@ -284,7 +247,89 @@ public class BusinessExportPdf {
 			builder.run();
 			return os.toByteArray();
 		} catch (Exception e) {
-			throw new RuntimeException("Error al generar el Horario en PDF", e);
+			throw new IllegalStateException("Error al generar el Horario en PDF", e);
 		}
 	}
+
+    private Map<String, List<ResponseScheduleGetAll>> computeActiveHourly(List<ResponseScheduleGetAll> scheduleList) {
+        Map<String, List<ResponseScheduleGetAll>> activeHourly = new HashMap<>();
+        for (ResponseScheduleGetAll lesson : scheduleList) {
+            int startHour = Integer.parseInt(lesson.startTime().split(":")[0]);
+            int endHour = Integer.parseInt(lesson.endTime().split(":")[0]);
+
+            for (int h = startHour; h < endHour; h++) {
+                String key = lesson.dayWeek() + "-" + h;
+                activeHourly.computeIfAbsent(key, k -> new ArrayList<>()).add(lesson);
+            }
+        }
+        return activeHourly;
+    }
+
+    private boolean checkConflict(ResponseScheduleGetAll lesson, int startHour, int endHour, Map<String, List<ResponseScheduleGetAll>> activeHourly) {
+        for (int h = startHour; h < endHour; h++) {
+            String key = lesson.dayWeek() + "-" + h;
+            List<ResponseScheduleGetAll> activeList = activeHourly.get(key);
+            if (activeList != null && activeList.size() > 1) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void addNonConflictingLesson(
+            ResponseScheduleGetAll lesson,
+            int startHour,
+            int endHour,
+            Map<String, List<ResponseScheduleGetAll>> customSchedule,
+            Map<String, Integer> durations,
+            Map<String, Boolean> skipCells) {
+        
+        String cellKey = lesson.dayWeek() + "-" + startHour;
+        List<ResponseScheduleGetAll> list = new ArrayList<>();
+        list.add(lesson);
+        customSchedule.put(cellKey, list);
+        durations.put(cellKey, endHour - startHour);
+
+        for (int h = startHour + 1; h < endHour; h++) {
+            skipCells.put(lesson.dayWeek() + "-" + h, true);
+        }
+    }
+
+    private void addConflictingLesson(
+            ResponseScheduleGetAll lesson,
+            int startHour,
+            int endHour,
+            Map<String, List<ResponseScheduleGetAll>> activeHourly,
+            Map<String, List<ResponseScheduleGetAll>> customSchedule,
+            Map<String, Integer> durations) {
+        
+        for (int h = startHour; h < endHour; h++) {
+            String cellKey = lesson.dayWeek() + "-" + h;
+            customSchedule.computeIfAbsent(cellKey, k -> {
+                durations.put(k, 1);
+                return activeHourly.get(k);
+            });
+        }
+    }
+
+    private void processScheduleList(
+            List<ResponseScheduleGetAll> scheduleList,
+            Map<String, List<ResponseScheduleGetAll>> activeHourly,
+            Map<String, List<ResponseScheduleGetAll>> customSchedule,
+            Map<String, Boolean> skipCells,
+            Map<String, Integer> durations) {
+        
+        for (ResponseScheduleGetAll lesson : scheduleList) {
+            int startHour = Integer.parseInt(lesson.startTime().split(":")[0]);
+            int endHour = Integer.parseInt(lesson.endTime().split(":")[0]);
+
+            boolean hasConflict = checkConflict(lesson, startHour, endHour, activeHourly);
+
+            if (!hasConflict) {
+                addNonConflictingLesson(lesson, startHour, endHour, customSchedule, durations, skipCells);
+            } else {
+                addConflictingLesson(lesson, startHour, endHour, activeHourly, customSchedule, durations);
+            }
+        }
+    }
 }

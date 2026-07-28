@@ -3,6 +3,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.security.Principal;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,7 +27,7 @@ public class ExportPdfController {
         byte[] pdfBytes = businessExportPdf.generatePdfByUserEmail(email);
         
         return ResponseEntity.ok()
-                .header("Content-Disposition", "attachment; filename=Constancia_Matricula.pdf")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=Constancia_Matricula.pdf")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(pdfBytes);
 	}
@@ -37,7 +38,7 @@ public class ExportPdfController {
         byte[] pdfBytes = businessExportPdf.generateHistorialPdfByUserEmail(email);
         
         return ResponseEntity.ok()
-                .header("Content-Disposition", "attachment; filename=Historial_Academico.pdf")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=Historial_Academico.pdf")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(pdfBytes);
 	}
@@ -48,7 +49,7 @@ public class ExportPdfController {
         byte[] pdfBytes = businessExportPdf.generateSchedulePdfByUserEmail(email);
         
         return ResponseEntity.ok()
-                .header("Content-Disposition", "attachment; filename=Horario_Academico_UNAMBA.pdf")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=Horario_Academico_UNAMBA.pdf")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(pdfBytes);
 	}

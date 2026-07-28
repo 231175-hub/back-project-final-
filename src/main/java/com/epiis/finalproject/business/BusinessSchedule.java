@@ -35,7 +35,7 @@ public class BusinessSchedule {
 	private final RepositoryGroup repositoryGroup;
 	private final RepositoryUser repositoryUser;
 	
-	public BusinessSchedule(RepositorySchedule repositorySchedule, RepositoryCourse repositoryCourse, RepositoryGroupStudent repositoryGroupStudent, RepositoryUser repositoryUser, RepositoryGroup repositoryGroup) {
+	public BusinessSchedule(RepositorySchedule repositorySchedule, RepositoryGroupStudent repositoryGroupStudent, RepositoryUser repositoryUser, RepositoryGroup repositoryGroup) {
 		this.repositorySchedule = repositorySchedule;
 		this.repositoryGroupStudent = repositoryGroupStudent;
 		this.repositoryGroup = repositoryGroup;
@@ -51,14 +51,14 @@ public class BusinessSchedule {
 		for(RequestScheduleInsert schedule : listRequest) {
 			
 			EntityGroup entityGroup = repositoryGroup.findById(schedule.getIdGroup())
-					.orElseThrow(() -> new RuntimeException("Grupo no encontrado en la base de datos"));
+					.orElseThrow(() -> new IllegalArgumentException("Grupo no encontrado en la base de datos"));
 			
 			if (schedule.getIdProfessor() != null && !schedule.getIdProfessor().isEmpty()) {
 				EntityUser usuarioProfesor = repositoryUser.findById(schedule.getIdProfessor())
-						.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+						.orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 				
 				if (usuarioProfesor.getChildProfessor() == null) {
-					throw new RuntimeException("El usuario seleccionado no está registrado como profesor.");
+					throw new IllegalStateException("El usuario seleccionado no está registrado como profesor.");
 				}
 				EntityProfessor profesorReal = usuarioProfesor.getChildProfessor();
 				

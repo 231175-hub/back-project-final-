@@ -47,10 +47,10 @@ public class BusinessUser {
 	    
 	    try {
 	        EntityRole roleAdmin = repositoryRole.findByNameRole(EnumRoles.ADMIN.toString())
-	        		.orElseThrow(() -> new RuntimeException("Error interno: El rol ADMIN no está configurado en la BD."));
+	        		.orElseThrow(() -> new IllegalStateException("Error interno: El rol ADMIN no está configurado en la BD."));
 
 	        if (repositoryUser.findByEmail(request.getEmail()).isPresent()) {
-	        	throw new RuntimeException("El correo electrónico ya está registrado.");
+	        	throw new IllegalArgumentException("El correo electrónico ya está registrado.");
 	        }
 	        
 	        String userId = UUID.randomUUID().toString();
@@ -87,7 +87,7 @@ public class BusinessUser {
 		
 		List<EntityUser> entityUser = repositoryUser.findAll().stream()
 				.filter(user -> user.getParentRole() != null && "Admin".equalsIgnoreCase(user.getParentRole().getNameRole()))
-				.collect(Collectors.toList());
+				.toList();
 		
 		Map<String, Object> res = new HashMap<>();
 		

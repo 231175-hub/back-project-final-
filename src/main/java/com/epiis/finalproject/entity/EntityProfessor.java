@@ -3,7 +3,6 @@ package com.epiis.finalproject.entity;
 import java.util.Date;
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -18,14 +17,14 @@ import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Where;
+import org.hibernate.annotations.SQLRestriction;
 import lombok.Getter;
 import lombok.Setter;
 
 @Entity
 @Table(name = "tprofessor")
 @SQLDelete(sql = "UPDATE tprofessor SET deleted = true WHERE id_professor = ?")
-@Where(clause = "deleted = false")
+@SQLRestriction("deleted = false")
 @Setter
 @Getter
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})

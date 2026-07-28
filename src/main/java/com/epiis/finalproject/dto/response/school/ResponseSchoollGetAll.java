@@ -9,9 +9,7 @@ public class ResponseSchoollGetAll extends ResponseGeneric{
 	@JsonProperty("urlImageSchool")
 	public String getUrlFormatWeb() {
 		if (this.urlmageSchool != null && !this.urlmageSchool.isEmpty()) {
-			String correctPath = this.urlmageSchool.replace("\\", "/");
-			
-			return correctPath;
+			return this.urlmageSchool.replace("\\", "/");
 		}
 		return null;
 	}

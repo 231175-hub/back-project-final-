@@ -92,7 +92,7 @@ public class GroupController {
 	
 	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR', 'PROFESSOR', 'PROFESOR')")
 	@GetMapping("getGroupWithCourse/{idCourse}")
-    public ResponseEntity<?> getGroupsByCourseId(@PathVariable String idCourse) {
+    public ResponseEntity<Object> getGroupsByCourseId(@PathVariable String idCourse) {
         List<EntityGroup> groups = businessGroup.getGroupsByCourse(idCourse);
         return ResponseEntity.ok(Map.of("data", groups));
     }

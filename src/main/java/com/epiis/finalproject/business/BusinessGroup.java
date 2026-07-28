@@ -197,7 +197,7 @@ public class BusinessGroup {
         }
 
         int totalStudents = unassignedStudents.size();
-        int numberOfGroups = (int) Math.ceil((double) totalStudents / 30.0);
+        int numberOfGroups = (int) Math.ceil(totalStudents / 30.0);
 
         Collections.shuffle(unassignedStudents);
 
@@ -266,7 +266,7 @@ public class BusinessGroup {
                     enrollment.getParentStudent().getCode(),
                     fullName
             );
-        }).collect(Collectors.toList());
+        }).toList();
     }
 	
 	public List<EntityGroup> getGroupsByCourse(String idCourse) {

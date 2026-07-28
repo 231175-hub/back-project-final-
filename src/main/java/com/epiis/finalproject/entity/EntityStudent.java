@@ -18,14 +18,14 @@ import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Where;
+import org.hibernate.annotations.SQLRestriction;
 import lombok.Getter;
 import lombok.Setter;
 
 @Entity
 @Table(name = "tstudent")
 @SQLDelete(sql = "UPDATE tstudent SET deleted = true WHERE id_student = ?")
-@Where(clause = "deleted = false")
+@SQLRestriction("deleted = false")
 @Setter
 @Getter
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})

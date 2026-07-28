@@ -192,11 +192,13 @@ public class BusinessProfessor {
 		
 		if (optional.isPresent()) {
 			EntityUser entityUser = optional.get();
-			
+			entityUser.setPassword(passwordEncoder.encode(request.getPassword()));
 			entityUser.setUpdatedAt(new java.sql.Date(new Date().getTime()));
+			repositoryUser.save(entityUser);
 			
 			response.success();
 			response.getListMessage().add("Contraseña de profesor actualizada correctamente");
+			return response;
 		}
 		
 		response.error();
@@ -217,6 +219,6 @@ public class BusinessProfessor {
 	        map.put("idProfessor", prof.getIdUser());
 	        map.put("fullName", prof.getSurName() + " " + prof.getFirstName());
 	        return map;
-	    }).collect(Collectors.toList());
+	    }).toList();
 	}
 }

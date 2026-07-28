@@ -33,7 +33,7 @@ public class SchoolController {
 	
 	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR')")
 	@PostMapping(path = "registerschool", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<ResponseSchoolInsert> actionInsert(@ModelAttribute RequestSchoolInsert request) throws Exception{
+	public ResponseEntity<ResponseSchoolInsert> actionInsert(@ModelAttribute RequestSchoolInsert request) throws java.io.IOException {
 		ResponseSchoolInsert response = businessSchool.insert(request);
 		
 		return ResponseEntity.ok(response);
@@ -55,7 +55,7 @@ public class SchoolController {
 	
 	@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR')")
 	@DeleteMapping(path = "deleteschool/{idSchool}")
-	public ResponseEntity<ResponseSchoolDeleteById> deleteById(@PathVariable String idSchool) throws Exception{
+	public ResponseEntity<ResponseSchoolDeleteById> deleteById(@PathVariable String idSchool) throws java.io.IOException {
 		ResponseSchoolDeleteById response = businessSchool.deleteById(idSchool);
 		
 		return ResponseEntity.ok(response);

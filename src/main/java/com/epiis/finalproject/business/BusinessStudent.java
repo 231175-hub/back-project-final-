@@ -10,6 +10,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
@@ -50,6 +52,11 @@ import jakarta.transaction.Transactional;
 
 @Service
 public class BusinessStudent {
+	private static final Logger log = LoggerFactory.getLogger(BusinessStudent.class);
+	private static final String KEY_MESSAGE = "message";
+	private static final String KEY_SUCCESS = "success";
+	private static final String KEY_ERROR = "error";
+
 	private final RepositoryStudent repositoryStudent;
 	private final RepositoryRole repositoryRole;
 	private final RepositorySchool repositorySchool;
@@ -162,7 +169,7 @@ public class BusinessStudent {
 		
 		response.success();
 		response.getListMessage().add("Estudiantes Entregados exitosamente");
-		res.put("message", response);
+		res.put(KEY_MESSAGE, response);
 		res.put("data", entityStudent);
 		return res;
 	}
@@ -174,7 +181,7 @@ public class BusinessStudent {
 		
 		response.success();
 		response.getListMessage().add("Estudiante Encontrado exitosamente");
-		res.put("message", response);
+		res.put(KEY_MESSAGE, response);
 		
 		if (entityStudent.isPresent()) {
 			EntityStudent student = entityStudent.get();
@@ -260,7 +267,9 @@ public class BusinessStudent {
 		
 		if (optional.isPresent()) {
 			EntityUser entityUser = optional.get();
+			entityUser.setPassword(passwordEncoder.encode(request.getPassword()));
 			entityUser.setUpdatedAt(new java.sql.Date(new Date().getTime()));
+			repositoryUser.save(entityUser);
 			response.success();
 			response.getListMessage().add("Contraseña de estudiante actualizada correctamente");
 		} else {

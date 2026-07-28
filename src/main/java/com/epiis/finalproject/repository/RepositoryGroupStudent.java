@@ -16,20 +16,20 @@ public interface RepositoryGroupStudent extends JpaRepository<EntityGroupStudent
     List<EntityGroup> findGroupsByStudentId(@Param("idStudent") String idStudent);
 	
 	@Query("""
-	        SELECT new com.epiis.finalproject.dto.response.schedule.ResponseScheduleGetAll(
-	            s.dayWeek, 
-	            CAST(s.startTime AS string), 
-	            CAST(s.endTime AS string), 
-	            s.classroom, 
-	            c.nameCourse,
-	            g.nameGroup
-	        ) 
-	        FROM EntityGroupStudent gs
-	        JOIN gs.parentGroup g
-	        JOIN g.parentCourse c
-	        JOIN g.childSchedule s
-	        WHERE gs.parentStudent.idStudent = :idKeycloak
-	    """)
+            SELECT new com.epiis.finalproject.dto.response.schedule.ResponseScheduleGetAll(
+                s.dayWeek, 
+                CAST(s.startTime AS string), 
+                CAST(s.endTime AS string), 
+                s.classroom, 
+                c.nameCourse,
+                g.nameGroup
+            ) 
+            FROM EntityGroupStudent gs
+            JOIN gs.parentGroup g
+            JOIN g.parentCourse c
+            JOIN g.childSchedule s
+            WHERE gs.parentStudent.idStudent = :idKeycloak
+            """)
 	List<ResponseScheduleGetAll> findCustomScheduleByStudentId(@Param("idKeycloak") String idKeycloak);
 	
 	@Query("SELECT COALESCE(SUM(c.credits), 0) FROM EntityGroupStudent gs " +
