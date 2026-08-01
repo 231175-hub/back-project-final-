@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "../../Angular/appswFinalProject"
+		},
+		{
+			"path": "."
+		},
+		{
+			"path": "../../KeycloakServer"
+		}
+	],
+	"settings": {}
+}
