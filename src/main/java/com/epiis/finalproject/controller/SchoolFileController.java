@@ -28,7 +28,7 @@ public class SchoolFileController {
 	}
 	
 	@PostMapping(path = "registerschoolfile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<ResponseSchoolFileInsert> insert(@ModelAttribute RequestSchoolFileInsert request) throws Exception {
+	public ResponseEntity<ResponseSchoolFileInsert> insert(@ModelAttribute RequestSchoolFileInsert request) throws java.io.IOException {
 		ResponseSchoolFileInsert response = businessSchoolFile.insert(request);
 		
 		return ResponseEntity.ok(response);

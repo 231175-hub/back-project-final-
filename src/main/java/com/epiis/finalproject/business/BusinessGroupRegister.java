@@ -174,7 +174,7 @@ public class BusinessGroupRegister {
         
         LocalDate startDate = LocalDate.now();
         if (period != null && period.getStartDate() != null) {
-            startDate = period.getStartDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+            startDate = new java.util.Date(period.getStartDate().getTime()).toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         }
         List<DayOfWeek> classDays = getClassDays(group);
         List<DayOfWeek> sortedDays = new ArrayList<>(classDays);

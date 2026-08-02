@@ -33,10 +33,15 @@ public class BusinessSchoolFile {
 	
 	private String storageDir = "storage";
 	
-	public ResponseSchoolFileInsert insert(RequestSchoolFileInsert request) throws Exception {
+	public ResponseSchoolFileInsert insert(RequestSchoolFileInsert request) throws java.io.IOException {
 		ResponseSchoolFileInsert response = new ResponseSchoolFileInsert();
 		
 		Optional<EntitySchool> optional = repositorySchool.findById(request.getIdSchool());
+		if (optional.isEmpty()) {
+			response.error();
+			response.getListMessage().add("Escuela no encontrada");
+			return response;
+		}
 		
 		EntitySchool entitySchool = optional.get();
 		

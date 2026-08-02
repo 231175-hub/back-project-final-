@@ -319,6 +319,16 @@ public class BusinessStudent {
 		return null;
 	}
 
+	private double calculateUnitPfValue(EntityUnitscore score, EntityGroup entityGroup) {
+		double cc = getRoundedScoreValue(score.getConceptualScore());
+		double cp = getRoundedScoreValue(score.getPracticalScore());
+		double ca = getRoundedScoreValue(score.getAttitudinalScore());
+
+		return cc * entityGroup.getConceptualWeight() +
+				cp * entityGroup.getPracticalWeight() +
+				ca * entityGroup.getAttitudinalWeight();
+	}
+
 	private void processSingleUnitGrades(
 			EntityUnits u,
 			List<EntityUnitscore> savedScores,
@@ -329,31 +339,24 @@ public class BusinessStudent {
 		
 		EntityUnitscore score = findScoreForUnitInStudent(savedScores, u);
 
-		String ccStr = "-";
-		String cpStr = "-";
-		String caStr = "-";
-		String pfStr = "-";
-
-		if (score != null) {
-			ccStr = formatGrade(score.getConceptualScore() != null ? (double) Math.round(score.getConceptualScore()) : null);
-			cpStr = formatGrade(score.getPracticalScore() != null ? (double) Math.round(score.getPracticalScore()) : null);
-			caStr = formatGrade(score.getAttitudinalScore() != null ? (double) Math.round(score.getAttitudinalScore()) : null);
-			pfStr = formatGrade((double) Math.round(score.getScore()));
-
-			if (score.getConceptualScore() == null || score.getPracticalScore() == null || score.getAttitudinalScore() == null) {
-				notasIncompletasRef[0] = true;
-			} else {
-				double cc = getRoundedScoreValue(score.getConceptualScore());
-				double cp = getRoundedScoreValue(score.getPracticalScore());
-				double ca = getRoundedScoreValue(score.getAttitudinalScore());
-
-				double unitPf = cc * entityGroup.getConceptualWeight() +
-								cp * entityGroup.getPracticalWeight() +
-								ca * entityGroup.getAttitudinalWeight();
-				sumOfUnitScoresRef[0] += Math.round(unitPf);
-			}
-		} else {
+		if (score == null) {
 			notasIncompletasRef[0] = true;
+			notasAlumno.put("CC" + u.getNumberUnit(), "-");
+			notasAlumno.put("CP" + u.getNumberUnit(), "-");
+			notasAlumno.put("CA" + u.getNumberUnit(), "-");
+			notasAlumno.put("PF" + u.getNumberUnit(), "-");
+			return;
+		}
+
+		String ccStr = formatGrade(score.getConceptualScore() != null ? (double) Math.round(score.getConceptualScore()) : null);
+		String cpStr = formatGrade(score.getPracticalScore() != null ? (double) Math.round(score.getPracticalScore()) : null);
+		String caStr = formatGrade(score.getAttitudinalScore() != null ? (double) Math.round(score.getAttitudinalScore()) : null);
+		String pfStr = formatGrade((double) Math.round(score.getScore()));
+
+		if (score.getConceptualScore() == null || score.getPracticalScore() == null || score.getAttitudinalScore() == null) {
+			notasIncompletasRef[0] = true;
+		} else {
+			sumOfUnitScoresRef[0] += Math.round(calculateUnitPfValue(score, entityGroup));
 		}
 
 		notasAlumno.put("CC" + u.getNumberUnit(), ccStr);
