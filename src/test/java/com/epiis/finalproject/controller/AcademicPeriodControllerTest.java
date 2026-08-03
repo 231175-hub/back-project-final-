@@ -6,14 +6,10 @@ import com.epiis.finalproject.dto.request.academicperiod.RequestAcademicPeriodUp
 import com.epiis.finalproject.dto.response.academicperiod.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.ResponseEntity;
 
-import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-class AcademicPeriodControllerTest {
+class AcademicPeriodControllerTest extends BaseControllerTest {
 
     private BusinessAcademicPeriod businessAcademicPeriod;
     private AcademicPeriodController controller;
@@ -30,42 +26,31 @@ class AcademicPeriodControllerTest {
         ResponseAcademicPeriodInsert resp = new ResponseAcademicPeriodInsert();
         resp.success();
         when(businessAcademicPeriod.insert(req)).thenReturn(resp);
-
-        ResponseEntity<ResponseAcademicPeriodInsert> result = controller.insert(req);
-        assertEquals(200, result.getStatusCode().value());
+        assertOk(controller.insert(req));
     }
 
     @Test
     void testGetAll() {
-        Map<String, Object> map = new HashMap<>();
-        when(businessAcademicPeriod.getAll()).thenReturn(map);
-
-        ResponseEntity<Map<String, Object>> result = controller.getAll();
-        assertEquals(200, result.getStatusCode().value());
+        when(businessAcademicPeriod.getAll()).thenReturn(emptyMap());
+        assertOk(controller.getAll());
     }
 
     @Test
     void testGetById() {
-        Map<String, Object> map = new HashMap<>();
-        when(businessAcademicPeriod.getById("p1")).thenReturn(map);
-
-        ResponseEntity<Map<String, Object>> result = controller.getById("p1");
-        assertEquals(200, result.getStatusCode().value());
+        when(businessAcademicPeriod.getById("p1")).thenReturn(emptyMap());
+        assertOk(controller.getById("p1"));
     }
 
     @Test
     void testDeleteById() {
         ResponseAcademicPeriodDeleteById resp = new ResponseAcademicPeriodDeleteById();
         when(businessAcademicPeriod.deleteById("p1")).thenReturn(resp);
-
-        ResponseEntity<ResponseAcademicPeriodDeleteById> result = controller.deleteById("p1");
-        assertEquals(200, result.getStatusCode().value());
+        assertOk(controller.deleteById("p1"));
     }
 
     @Test
     void testGetStatuses() {
-        ResponseEntity<Object> result = controller.getStatuses();
-        assertEquals(200, result.getStatusCode().value());
+        assertOk(controller.getStatuses());
     }
 
     @Test
@@ -74,8 +59,6 @@ class AcademicPeriodControllerTest {
         ResponseAcademicPeriodUpdate resp = new ResponseAcademicPeriodUpdate();
         resp.setType("success");
         when(businessAcademicPeriod.update("p1", req)).thenReturn(resp);
-
-        ResponseEntity<ResponseAcademicPeriodUpdate> result = controller.update("p1", req);
-        assertEquals(200, result.getStatusCode().value());
+        assertOk(controller.update("p1", req));
     }
 }

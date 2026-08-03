@@ -1,8 +1,5 @@
 package com.epiis.finalproject.business;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -16,6 +13,8 @@ import com.epiis.finalproject.dto.response.role.ResponseRoleGetById;
 import com.epiis.finalproject.dto.response.role.ResponseRoleInsert;
 import com.epiis.finalproject.dto.response.role.ResponseRoleUpdate;
 import com.epiis.finalproject.entity.EntityRole;
+import com.epiis.finalproject.helper.DateUtil;
+import com.epiis.finalproject.helper.ResponseMapBuilder;
 import com.epiis.finalproject.repository.RepositoryRole;
 
 @Service
@@ -30,10 +29,9 @@ public class BusinessRole {
 		ResponseRoleInsert response = new ResponseRoleInsert();
 		
 		EntityRole entityRole = new EntityRole();
-		
 		entityRole.setIdRole(UUID.randomUUID().toString());
 		entityRole.setNameRole(request.getNameRole());
-		entityRole.setCreatedAt(new java.sql.Date(new Date().getTime()));
+		entityRole.setCreatedAt(DateUtil.currentSqlDate());
 		entityRole.setUpdatedAt(entityRole.getCreatedAt());
 		
 		repositoryRole.save(entityRole);
@@ -44,46 +42,26 @@ public class BusinessRole {
 		return response;
 	}
 	
-	public Map<String, Object> getAll(){
-		ResponseRoleInsert response = new ResponseRoleInsert();
-		
-		List<EntityRole> entityRole = repositoryRole.findAll();
-		
-		Map<String, Object> res = new HashMap<>();
-		
-		response.success();
-		response.getListMessage().add("Roles entregados correctamente");
-		
-		res.put("message", response);
-		res.put("data", entityRole);
-		
-		return res;
+	public Map<String, Object> getAll() {
+		return ResponseMapBuilder.buildDataMap(
+				new ResponseRoleInsert(),
+				"Roles entregados correctamente",
+				repositoryRole.findAll());
 	}
 	
-	public Map<String, Object> getById(String idRole){
-		ResponseRoleGetById response = new ResponseRoleGetById();
-		
+	public Map<String, Object> getById(String idRole) {
 		Optional<EntityRole> entityRole = repositoryRole.findById(idRole);
-		
-		Map<String, Object> res = new HashMap<>();
-		
-		response.success();
-		response.getListMessage().add("Rol encontrado correctamente");
-		
-		res.put("message", response);
-		res.put("data", entityRole);
-		
-		return res;
+		return ResponseMapBuilder.buildDataMap(
+				new ResponseRoleGetById(),
+				"Rol encontrado correctamente",
+				entityRole);
 	}
 	
 	public ResponseRoleDeleteById deleteById(String idRole) {
 		ResponseRoleDeleteById response = new ResponseRoleDeleteById();
-		
 		repositoryRole.deleteById(idRole);
-		
 		response.success();
 		response.getListMessage().add("Rol eliminado correctamente");
-		
 		return response;
 	}
 	
@@ -94,21 +72,16 @@ public class BusinessRole {
 		
 		if (optional.isPresent()) {
 			EntityRole entityRole = optional.get();
-			
 			entityRole.setNameRole(request.getNameRole());
-			entityRole.setUpdatedAt(new java.sql.Date(new Date().getTime()));
-			
+			entityRole.setUpdatedAt(DateUtil.currentSqlDate());
 			repositoryRole.save(entityRole);
-			
 			response.success();
 			response.getListMessage().add("Rol actualizado correctamente");
-			
 			return response;
 		}
 		
 		response.error();
 		response.getListMessage().add("Error el rol no se actualizo");
-		
 		return response;
 	}
 }

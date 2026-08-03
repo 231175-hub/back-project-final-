@@ -6,14 +6,10 @@ import com.epiis.finalproject.dto.request.role.RequestRoleUpdate;
 import com.epiis.finalproject.dto.response.role.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.ResponseEntity;
 
-import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-class RoleControllerTest {
+class RoleControllerTest extends BaseControllerTest {
 
     private BusinessRole businessRole;
     private RoleController controller;
@@ -30,45 +26,31 @@ class RoleControllerTest {
         ResponseRoleInsert resp = new ResponseRoleInsert();
         resp.success();
         when(businessRole.insert(req)).thenReturn(resp);
-
-        ResponseEntity<ResponseRoleInsert> result = controller.insert(req);
-        assertEquals(200, result.getStatusCode().value());
+        assertOk(controller.insert(req));
     }
 
     @Test
     void testGetAll() {
-        Map<String, Object> map = new HashMap<>();
-        when(businessRole.getAll()).thenReturn(map);
-
-        ResponseEntity<Map<String, Object>> result = controller.getAll();
-        assertEquals(200, result.getStatusCode().value());
+        when(businessRole.getAll()).thenReturn(emptyMap());
+        assertOk(controller.getAll());
     }
 
     @Test
     void testGetById() {
-        Map<String, Object> map = new HashMap<>();
-        when(businessRole.getById("r1")).thenReturn(map);
-
-        ResponseEntity<Map<String, Object>> result = controller.getById("r1");
-        assertEquals(200, result.getStatusCode().value());
+        when(businessRole.getById("r1")).thenReturn(emptyMap());
+        assertOk(controller.getById("r1"));
     }
 
     @Test
     void testDeleteById() {
-        ResponseRoleDeleteById resp = new ResponseRoleDeleteById();
-        when(businessRole.deleteById("r1")).thenReturn(resp);
-
-        ResponseEntity<ResponseRoleDeleteById> result = controller.deleteById("r1");
-        assertEquals(200, result.getStatusCode().value());
+        when(businessRole.deleteById("r1")).thenReturn(new ResponseRoleDeleteById());
+        assertOk(controller.deleteById("r1"));
     }
 
     @Test
     void testUpdate() {
         RequestRoleUpdate req = new RequestRoleUpdate();
-        ResponseRoleUpdate resp = new ResponseRoleUpdate();
-        when(businessRole.update("r1", req)).thenReturn(resp);
-
-        ResponseEntity<ResponseRoleUpdate> result = controller.update("r1", req);
-        assertEquals(200, result.getStatusCode().value());
+        when(businessRole.update("r1", req)).thenReturn(new ResponseRoleUpdate());
+        assertOk(controller.update("r1", req));
     }
 }

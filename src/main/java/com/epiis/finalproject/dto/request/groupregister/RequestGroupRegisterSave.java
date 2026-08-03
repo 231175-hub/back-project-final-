@@ -1,5 +1,7 @@
 package com.epiis.finalproject.dto.request.groupregister;
 
+import com.epiis.finalproject.dto.common.UnitScoreBase;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.NotBlank;
@@ -32,21 +34,11 @@ public class RequestGroupRegisterSave {
 
     @Getter
     @Setter
-    public static class UnitScoreSaveData {
+    public static class UnitScoreSaveData extends UnitScoreBase {
         private String idUnitScore; // can be null/empty if new
         
         @NotBlank(message = "El campo idUnits es obligatorio")
         private String idUnits;
-        
-        private Double conceptualScore;
-        private Double practicalScore;
-        private Double test1Score;
-        private Double test2Score;
-        private Double attitudinalScore;
-        private String conceptualGrades;
-        private String practicalGrades;
-        private String testGrades;
-        private double score; // Promedio final de unidad
     }
 
     @Getter

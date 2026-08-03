@@ -19,10 +19,14 @@ import com.epiis.finalproject.business.BusinessUser;
 import com.epiis.finalproject.entity.EntityUser;
 import com.epiis.finalproject.repository.RepositoryUser;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @PreAuthorize("hasAnyRole('ADMIN', 'PROFESSOR', 'STUDENT')")
 @RestController
 @RequestMapping(path = "intranet")
 public class MeController {
+	private static final Logger log = LoggerFactory.getLogger(MeController.class);
 	private final RepositoryUser repositoryUser;
 	private final BusinessUser businessUser;
 	
@@ -65,7 +69,7 @@ public class MeController {
 				profile.put("email", userEmail);
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error("Error interno al cargar perfil", e);
 			profile.put(KEY_ERROR, "Error interno al cargar perfil: " + e.getMessage());
 		}
 

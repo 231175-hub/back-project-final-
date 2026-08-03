@@ -6,15 +6,14 @@ import com.epiis.finalproject.dto.request.schedule.RequestScheduleUpdate;
 import com.epiis.finalproject.dto.response.schedule.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.ResponseEntity;
 
 import java.security.Principal;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-class ScheduleControllerTest {
+class ScheduleControllerTest extends BaseControllerTest {
 
     private BusinessSchedule businessSchedule;
     private ScheduleController controller;
@@ -31,9 +30,7 @@ class ScheduleControllerTest {
         ResponseScheduleInsert resp = new ResponseScheduleInsert();
         resp.success();
         when(businessSchedule.insert(List.of(req))).thenReturn(resp);
-
-        ResponseEntity<ResponseScheduleInsert> result = controller.insert(List.of(req));
-        assertEquals(200, result.getStatusCode().value());
+        assertOk(controller.insert(List.of(req)));
     }
 
     @Test
@@ -41,36 +38,25 @@ class ScheduleControllerTest {
         Principal principal = mock(Principal.class);
         when(principal.getName()).thenReturn("user@email.com");
         when(businessSchedule.getStudentScheduleByUserEmail("user@email.com")).thenReturn(Collections.emptyList());
-
-        ResponseEntity<List<ResponseScheduleGetAll>> result = controller.getAll(principal);
-        assertEquals(200, result.getStatusCode().value());
+        assertOk(controller.getAll(principal));
     }
 
     @Test
     void testGetById() {
-        Map<String, Object> map = new HashMap<>();
-        when(businessSchedule.getById("s1")).thenReturn(map);
-
-        ResponseEntity<Map<String, Object>> result = controller.getById("s1");
-        assertEquals(200, result.getStatusCode().value());
+        when(businessSchedule.getById("s1")).thenReturn(emptyMap());
+        assertOk(controller.getById("s1"));
     }
 
     @Test
     void testDeleteById() {
-        ResponseScheduleDeleteById resp = new ResponseScheduleDeleteById();
-        when(businessSchedule.deleteById("s1")).thenReturn(resp);
-
-        ResponseEntity<ResponseScheduleDeleteById> result = controller.deleteById("s1");
-        assertEquals(200, result.getStatusCode().value());
+        when(businessSchedule.deleteById("s1")).thenReturn(new ResponseScheduleDeleteById());
+        assertOk(controller.deleteById("s1"));
     }
 
     @Test
     void testUpdate() {
         RequestScheduleUpdate req = new RequestScheduleUpdate();
-        ResponseScheduleUpdate resp = new ResponseScheduleUpdate();
-        when(businessSchedule.update("s1", req)).thenReturn(resp);
-
-        ResponseEntity<ResponseScheduleUpdate> result = controller.update("s1", req);
-        assertEquals(200, result.getStatusCode().value());
+        when(businessSchedule.update("s1", req)).thenReturn(new ResponseScheduleUpdate());
+        assertOk(controller.update("s1", req));
     }
 }

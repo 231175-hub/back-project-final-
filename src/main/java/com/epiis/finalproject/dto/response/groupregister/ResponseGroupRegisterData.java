@@ -1,5 +1,7 @@
 package com.epiis.finalproject.dto.response.groupregister;
 
+import com.epiis.finalproject.dto.common.UnitScoreBase;
+
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
@@ -60,19 +62,10 @@ public class ResponseGroupRegisterData {
 
     @Getter
     @Setter
-    public static class UnitScoreData {
+    public static class UnitScoreData extends UnitScoreBase {
         private String idUnitScore;
         private String idUnits;
         private int numberUnit;
-        private Double conceptualScore;
-        private Double practicalScore;
-        private Double test1Score;
-        private Double test2Score;
-        private Double attitudinalScore;
-        private String conceptualGrades;
-        private String practicalGrades;
-        private String testGrades;
-        private double score;
     }
 
     @Getter

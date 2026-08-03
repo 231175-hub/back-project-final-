@@ -6,12 +6,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+
+import com.epiis.finalproject.helper.DateUtil;
+import com.epiis.finalproject.helper.ResponseMapBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -67,7 +68,7 @@ public class BusinessSchool{
 			entitySchool.setUrlImageSchool(relativeRoute);
 		}
 		
-		entitySchool.setCreatedAt(new java.sql.Date(new Date().getTime()));
+		entitySchool.setCreatedAt(DateUtil.currentSqlDate());
 		entitySchool.setUpdatedAt(entitySchool.getCreatedAt());
 		
 		repositorySchool.save(entitySchool);
@@ -83,35 +84,17 @@ public class BusinessSchool{
 	}
 	
 	public Map<String, Object> getAll() {
-		ResponseSchoollGetAll response = new ResponseSchoollGetAll();
-		
-		List<EntitySchool> list = repositorySchool.findAll();
-		
-		Map<String, Object> res = new HashMap<>();
-				
-		response.success();
-		response.getListMessage().add("Escuelas entregadas correctamente");
-		
-		res.put("message", response);
-		res.put("data", list);
-		
-		return res;
+		return ResponseMapBuilder.buildDataMap(
+				new ResponseSchoollGetAll(),
+				"Escuelas entregadas correctamente",
+				repositorySchool.findAll());
 	}
 	
 	public Map<String, Object> getById(String idSchool){
-		ResponseSchoolGetById response = new ResponseSchoolGetById();
-		
-		Optional<EntitySchool> entitySchool = repositorySchool.findById(idSchool);
-		
-		Map<String, Object> res = new HashMap<>();
-		
-		response.success();
-		response.getListMessage().add("Escuela encontrada exitosamente");
-		
-		res.put("message", response);
-		res.put("data", entitySchool);
-		
-		return res;
+		return ResponseMapBuilder.buildDataMap(
+				new ResponseSchoolGetById(),
+				"Escuela encontrada exitosamente",
+				repositorySchool.findById(idSchool));
 	}
 	
 	public ResponseSchoolDeleteById deleteById(String idSchool) throws java.io.IOException {
@@ -178,7 +161,7 @@ public class BusinessSchool{
 				}
 			}
 			
-			entitySchool.setUpdatedAt(new java.sql.Date(new Date().getTime()));
+			entitySchool.setUpdatedAt(DateUtil.currentSqlDate());
 
 			repositorySchool.save(entitySchool);
 			

@@ -1,7 +1,6 @@
 package com.epiis.finalproject.business;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -19,6 +18,7 @@ import com.epiis.finalproject.repository.RepositoryCourse;
 import com.epiis.finalproject.repository.RepositoryCourseEnrollment;
 import com.epiis.finalproject.repository.RepositoryStudent;
 import com.epiis.finalproject.staticdata.EnumAcademicPeriod;
+import com.epiis.finalproject.helper.DateUtil;
 
 @Service
 public class BusinessCourseEnrollment {
@@ -70,7 +70,7 @@ public class BusinessCourseEnrollment {
 			entityCourseEnrollment.setParentCourse(entityCourse);
 			entityCourseEnrollment.setAssigned(false);
 			entityCourseEnrollment.setParentPeriod(entityAcademicPeriod);
-			entityCourseEnrollment.setCreatedAt(new java.sql.Date(new Date().getTime()));
+		entityCourseEnrollment.setCreatedAt(DateUtil.currentSqlDate());
 			entityCourseEnrollment.setUpdatedAt(entityCourseEnrollment.getCreatedAt());
 			
 			listCourseEnrollments.add(entityCourseEnrollment);

@@ -1,11 +1,11 @@
 package com.epiis.finalproject.business;
 
-import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+
+import com.epiis.finalproject.helper.DateUtil;
+import com.epiis.finalproject.helper.ResponseMapBuilder;
+import com.epiis.finalproject.helper.UserMutationHelper;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,20 +24,27 @@ import com.epiis.finalproject.entity.EntityRole;
 import com.epiis.finalproject.entity.EntityUser;
 import com.epiis.finalproject.repository.RepositoryRole;
 import com.epiis.finalproject.repository.RepositoryUser;
+import com.epiis.finalproject.helper.PasswordUpdateHelper;
 import com.epiis.finalproject.staticdata.EnumRoles;
 
 import jakarta.transaction.Transactional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Service
 public class BusinessUser {
+	private static final Logger log = LoggerFactory.getLogger(BusinessUser.class);
 	private final RepositoryUser repositoryUser;
 	private final RepositoryRole repositoryRole;
 	private final PasswordEncoder passwordEncoder;
+	private final PasswordUpdateHelper passwordUpdateHelper;
 
-	public BusinessUser(RepositoryUser repositoryUser, RepositoryRole repositoryRole, PasswordEncoder passwordEncoder) {
+	public BusinessUser(RepositoryUser repositoryUser, RepositoryRole repositoryRole, PasswordEncoder passwordEncoder, PasswordUpdateHelper passwordUpdateHelper) {
 		this.repositoryUser = repositoryUser;
 		this.repositoryRole = repositoryRole;
 		this.passwordEncoder = passwordEncoder;
+		this.passwordUpdateHelper = passwordUpdateHelper;
 	}
 
 	@Transactional
@@ -53,20 +60,10 @@ public class BusinessUser {
 				throw new IllegalArgumentException("El correo electrónico ya está registrado.");
 			}
 
-			String userId = UUID.randomUUID().toString();
-
-			EntityUser entityUser = new EntityUser();
-
-			entityUser.setIdUser(userId);
-			entityUser.setFirstName(request.getFirstName());
-			entityUser.setSurName(request.getSurName());
-			entityUser.setEmail(request.getEmail());
-			entityUser.setPassword(passwordEncoder.encode(request.getPassword()));
+			EntityUser entityUser = UserMutationHelper.buildEntityUser(
+					request.getFirstName(), request.getSurName(), request.getEmail(), request.getPassword(), passwordEncoder);
 
 			entityUser.setParentRole(roleAdmin);
-
-			entityUser.setCreatedAt(new java.sql.Date(new Date().getTime()));
-			entityUser.setUpdatedAt(entityUser.getCreatedAt());
 
 			repositoryUser.save(entityUser);
 
@@ -74,7 +71,7 @@ public class BusinessUser {
 			response.getListMessage().add("Administrador registrado correctamente.");
 
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error("Error al registrar el administrador", e);
 			response.error();
 			response.getListMessage().add("Error al registrar el administrador: " + e.getMessage());
 		}
@@ -83,98 +80,48 @@ public class BusinessUser {
 	}
 
 	public Map<String, Object> getAll() {
-		ResponseUserGetAll response = new ResponseUserGetAll();
-
-		List<EntityUser> entityUser = repositoryUser.findAll().stream()
-				.filter(user -> user.getParentRole() != null
-						&& "Admin".equalsIgnoreCase(user.getParentRole().getNameRole()))
-				.toList();
-
-		Map<String, Object> res = new HashMap<>();
-
-		response.success();
-		response.getListMessage().add("Usuarios entregados correctamente");
-
-		res.put("message", response);
-		res.put("data", entityUser);
-
-		return res;
+		return ResponseMapBuilder.buildDataMap(
+				new ResponseUserGetAll(),
+				"Usuarios entregados correctamente",
+				repositoryUser.findAll().stream()
+						.filter(user -> user.getParentRole() != null
+								&& "Admin".equalsIgnoreCase(user.getParentRole().getNameRole()))
+						.toList());
 	}
 
 	public Map<String, Object> getById(String idUser) {
-		ResponseUserGetById response = new ResponseUserGetById();
-
-		Map<String, Object> res = new HashMap<>();
-
-		Optional<EntityUser> entity = repositoryUser.findById(idUser);
-
-		response.success();
-		response.getListMessage().add("Usuario encontrado exitosamente");
-
-		res.put("message", response);
-		res.put("data", entity);
-
-		return res;
+		return ResponseMapBuilder.buildDataMap(
+				new ResponseUserGetById(),
+				"Usuario encontrado exitosamente",
+				repositoryUser.findById(idUser));
 	}
 
 	public ResponseUserDeleteById deleteById(String idUser) {
-		ResponseUserDeleteById response = new ResponseUserDeleteById();
-
-		repositoryUser.deleteById(idUser);
-
-		response.success();
-		response.getListMessage().add("Usuario eliminado correctamente");
-
-		return response;
+		return UserMutationHelper.deleteById(
+				new ResponseUserDeleteById(), idUser,
+				repositoryUser::deleteById,
+				"Usuario eliminado correctamente");
 	}
 
 	public ResponseUserUpdate update(String idUser, RequestUserUpdate request) {
-		ResponseUserUpdate response = new ResponseUserUpdate();
-
-		Optional<EntityUser> optional = repositoryUser.findById(idUser);
-
-		if (optional.isPresent()) {
-			EntityUser entityUser = optional.get();
-
-			entityUser.setFirstName(request.getFirstName());
-			entityUser.setSurName(request.getSurName());
-			entityUser.setEmail(request.getEmail());
-			entityUser.setUpdatedAt(new java.sql.Date(new Date().getTime()));
-
-			repositoryUser.save(entityUser);
-
-			response.success();
-			response.getListMessage().add("Usuario actualizado correctamente");
-
-			return response;
-		}
-
-		response.error();
-		response.getListMessage().add("Error el usuario no se actualizo");
-
-		return response;
+		return UserMutationHelper.updateUser(
+				repositoryUser, new ResponseUserUpdate(), idUser,
+				entityUser -> {
+					entityUser.setFirstName(request.getFirstName());
+					entityUser.setSurName(request.getSurName());
+					entityUser.setEmail(request.getEmail());
+					entityUser.setUpdatedAt(DateUtil.currentSqlDate());
+					repositoryUser.save(entityUser);
+				},
+				"Usuario actualizado correctamente",
+				"Error el usuario no se actualizo");
 	}
 
 	public ResponseUserUpdatePassword updatePassword(String email, RequestUserUpdatePassword request) {
-		ResponseUserUpdatePassword response = new ResponseUserUpdatePassword();
-
-		Optional<EntityUser> optional = repositoryUser.findByEmail(email);
-
-		if (optional.isPresent()) {
-			EntityUser entityUser = optional.get();
-			entityUser.setPassword(passwordEncoder.encode(request.getPassword()));
-			entityUser.setUpdatedAt(new java.sql.Date(new Date().getTime()));
-			repositoryUser.save(entityUser);
-
-			response.success();
-			response.getListMessage().add("Contraseña de usuario actualizada correctamente");
-			return response;
-		}
-
-		response.error();
-		response.getListMessage().add("Contraseña de usuario no actualizada");
-
-		return response;
+		return passwordUpdateHelper.updatePassword(
+				email, request,
+				"Contraseña de usuario actualizada correctamente",
+				"Contraseña de usuario no actualizada");
 	}
 
 	public void updateProfileImage(String idUser, RequestUserUpdateUploadImg request) throws java.io.IOException {

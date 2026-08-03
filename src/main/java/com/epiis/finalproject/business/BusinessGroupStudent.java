@@ -1,11 +1,12 @@
 package com.epiis.finalproject.business;
 
-import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+
+import com.epiis.finalproject.helper.DateUtil;
+import com.epiis.finalproject.helper.ResponseMapBuilder;
 
 import org.springframework.stereotype.Service;
 
@@ -45,7 +46,7 @@ public class BusinessGroupStudent {
 		entityGroupStudent.setIdGroupStudent(UUID.randomUUID().toString());
 		entityGroupStudent.setParentGroup(entityGroup);
 		entityGroupStudent.setParentStudent(entityStudent);
-		entityGroupStudent.setCreatedAt(new java.sql.Date(new Date().getTime()));
+		entityGroupStudent.setCreatedAt(DateUtil.currentSqlDate());
 		entityGroupStudent.setUpdatedAt(entityGroupStudent.getCreatedAt());
 		
 		repositoryGroupStudent.save(entityGroupStudent);
@@ -57,35 +58,17 @@ public class BusinessGroupStudent {
 	}
 	
 	public Map<String, Object> getAll() {
-		ResponseGroupStudentGetAll response = new ResponseGroupStudentGetAll();
-		
-		Map<String, Object> res = new HashMap<>();
-		
-		List<EntityGroupStudent> entityGroupStudent = repositoryGroupStudent.findAll();
-		
-		response.success();
-		response.getListMessage().add("Estudiantes/Grupos Entregados Correctamente");
-		
-		res.put("message", response);
-		res.put("data", entityGroupStudent);
-		
-		return res;
+		return ResponseMapBuilder.buildDataMap(
+				new ResponseGroupStudentGetAll(),
+				"Estudiantes/Grupos Entregados Correctamente",
+				repositoryGroupStudent.findAll());
 	}
 	
 	public Map<String, Object> getById(String idGroupStudent) {
-		ResponseGroupStudentGetById response = new ResponseGroupStudentGetById();
-		
-		Map<String, Object> res = new HashMap<>();
-		
-		Optional<EntityGroupStudent> entityGroupStudent = repositoryGroupStudent.findById(idGroupStudent);
-		
-		response.success();
-		response.getListMessage().add("Estudiante/Grupo Encontrado Correctamente");
-		
-		res.put("message", response);
-		res.put("data", entityGroupStudent);
-		
-		return res;
+		return ResponseMapBuilder.buildDataMap(
+				new ResponseGroupStudentGetById(),
+				"Estudiante/Grupo Encontrado Correctamente",
+				repositoryGroupStudent.findById(idGroupStudent));
 	}
 	
 	public ResponseGroupDeleteById deleteById(String idGroupStudent) {
@@ -113,7 +96,7 @@ public class BusinessGroupStudent {
 			
 			entityGroupStudent.setParentGroup(entityGroup);
 			entityGroupStudent.setParentStudent(entityStudent);
-			entityGroupStudent.setUpdatedAt(new java.sql.Date(new Date().getTime()));
+			entityGroupStudent.setUpdatedAt(DateUtil.currentSqlDate());
 			
 			repositoryGroupStudent.save(entityGroupStudent);
 			

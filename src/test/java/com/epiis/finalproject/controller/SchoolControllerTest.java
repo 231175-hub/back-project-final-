@@ -5,15 +5,10 @@ import com.epiis.finalproject.dto.request.school.RequestSchoolInsert;
 import com.epiis.finalproject.dto.response.school.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.ResponseEntity;
 
-import java.io.IOException;
-import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-class SchoolControllerTest {
+class SchoolControllerTest extends BaseControllerTest {
 
     private BusinessSchool businessSchool;
     private SchoolController schoolController;
@@ -25,41 +20,29 @@ class SchoolControllerTest {
     }
 
     @Test
-    void testActionInsert() throws IOException {
+    void testActionInsert() throws Exception {
         RequestSchoolInsert req = new RequestSchoolInsert();
         ResponseSchoolInsert resp = new ResponseSchoolInsert();
         resp.success();
         when(businessSchool.insert(req)).thenReturn(resp);
-
-        ResponseEntity<ResponseSchoolInsert> result = schoolController.actionInsert(req);
-        assertEquals(200, result.getStatusCode().value());
+        assertOk(schoolController.actionInsert(req));
     }
 
     @Test
     void testGetAll() {
-        Map<String, Object> map = new HashMap<>();
-        map.put("data", Collections.emptyList());
-        when(businessSchool.getAll()).thenReturn(map);
-
-        ResponseEntity<Map<String, Object>> result = schoolController.getAll();
-        assertEquals(200, result.getStatusCode().value());
+        when(businessSchool.getAll()).thenReturn(emptyMap());
+        assertOk(schoolController.getAll());
     }
 
     @Test
     void testGetById() {
-        Map<String, Object> map = new HashMap<>();
-        when(businessSchool.getById("s1")).thenReturn(map);
-
-        ResponseEntity<Map<String, Object>> result = schoolController.getById("s1");
-        assertEquals(200, result.getStatusCode().value());
+        when(businessSchool.getById("s1")).thenReturn(emptyMap());
+        assertOk(schoolController.getById("s1"));
     }
 
     @Test
-    void testDeleteById() throws IOException {
-        ResponseSchoolDeleteById resp = new ResponseSchoolDeleteById();
-        when(businessSchool.deleteById("s1")).thenReturn(resp);
-
-        ResponseEntity<ResponseSchoolDeleteById> result = schoolController.deleteById("s1");
-        assertEquals(200, result.getStatusCode().value());
+    void testDeleteById() throws Exception {
+        when(businessSchool.deleteById("s1")).thenReturn(new ResponseSchoolDeleteById());
+        assertOk(schoolController.deleteById("s1"));
     }
 }

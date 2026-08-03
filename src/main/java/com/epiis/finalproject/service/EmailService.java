@@ -36,46 +36,48 @@ public class EmailService {
         log.info("{}", resetUrl);
         log.info("=========================================================");
 
-        CompletableFuture.runAsync(() -> {
-            if (resendApiKey == null || resendApiKey.trim().isEmpty()) {
-                log.warn("Resend API Key is not configured. Email NOT sent to {}, but token is logged above.", toEmail);
-                return;
+        CompletableFuture.runAsync(() -> sendResetPasswordEmailSync(toEmail, resetUrl));
+    }
+
+    void sendResetPasswordEmailSync(String toEmail, String resetUrl) {
+        if (resendApiKey == null || resendApiKey.trim().isEmpty()) {
+            log.warn("Resend API Key is not configured. Email NOT sent to {}, but token is logged above.", toEmail);
+            return;
+        }
+
+        try {
+            String url = "https://api.resend.com/emails";
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("Authorization", "Bearer " + resendApiKey.trim());
+
+            Map<String, Object> body = new HashMap<>();
+            body.put("from", senderEmail);
+            body.put("to", toEmail);
+            body.put("subject", "Restablecer tu contraseña - Intranet UNAMBA");
+
+            String htmlContent = "<p>Hola,</p>"
+                    + "<p>Hemos recibido una solicitud para restablecer la contraseña de tu cuenta de la Intranet UNAMBA.</p>"
+                    + "<p>Haz clic en el siguiente enlace para restablecerla:</p>"
+                    + "<p><a href=\"" + resetUrl + "\" style=\"background-color: #003876; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;\">Restablecer Contraseña</a></p>"
+                    + "<p>Este enlace expirará en 15 minutos.</p>"
+                    + "<p>Si no solicitaste este cambio, por favor ignora este correo.</p>"
+                    + "<br>"
+                    + "<p>Atentamente,<br>Soporte Intranet UNAMBA</p>";
+            
+            body.put("html", htmlContent);
+
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+            ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                log.info("Reset password email successfully sent via Resend to {}", toEmail);
+            } else {
+                log.error("Failed to send email via Resend. Status: {}, Response: {}", response.getStatusCode(), response.getBody());
             }
-
-            try {
-                String url = "https://api.resend.com/emails";
-
-                HttpHeaders headers = new HttpHeaders();
-                headers.setContentType(MediaType.APPLICATION_JSON);
-                headers.set("Authorization", "Bearer " + resendApiKey.trim());
-
-                Map<String, Object> body = new HashMap<>();
-                body.put("from", senderEmail);
-                body.put("to", toEmail);
-                body.put("subject", "Restablecer tu contraseña - Intranet UNAMBA");
-
-                String htmlContent = "<p>Hola,</p>"
-                        + "<p>Hemos recibido una solicitud para restablecer la contraseña de tu cuenta de la Intranet UNAMBA.</p>"
-                        + "<p>Haz clic en el siguiente enlace para restablecerla:</p>"
-                        + "<p><a href=\"" + resetUrl + "\" style=\"background-color: #003876; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;\">Restablecer Contraseña</a></p>"
-                        + "<p>Este enlace expirará en 15 minutos.</p>"
-                        + "<p>Si no solicitaste este cambio, por favor ignora este correo.</p>"
-                        + "<br>"
-                        + "<p>Atentamente,<br>Soporte Intranet UNAMBA</p>";
-                
-                body.put("html", htmlContent);
-
-                HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
-                ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
-
-                if (response.getStatusCode().is2xxSuccessful()) {
-                    log.info("Reset password email successfully sent via Resend to {}", toEmail);
-                } else {
-                    log.error("Failed to send email via Resend. Status: {}, Response: {}", response.getStatusCode(), response.getBody());
-                }
-            } catch (Exception e) {
-                log.error("Failed to send email to {} via Resend. Error: {}", toEmail, e.getMessage());
-            }
-        });
+        } catch (Exception e) {
+            log.error("Failed to send email to {} via Resend. Error: {}", toEmail, e.getMessage());
+        }
     }
 }

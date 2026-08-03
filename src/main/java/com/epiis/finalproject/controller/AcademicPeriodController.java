@@ -22,9 +22,13 @@ import com.epiis.finalproject.dto.response.academicperiod.ResponseAcademicPeriod
 import com.epiis.finalproject.dto.response.academicperiod.ResponseAcademicPeriodInsert;
 import com.epiis.finalproject.dto.response.academicperiod.ResponseAcademicPeriodUpdate;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @RestController
 @RequestMapping(path = "intranet")
 public class AcademicPeriodController {
+	private static final Logger log = LoggerFactory.getLogger(AcademicPeriodController.class);
 	private final BusinessAcademicPeriod businessAcademicPeriod;
 	
 	private static final String STR_ERROR = "error";
@@ -75,7 +79,7 @@ public class AcademicPeriodController {
 				.toList();
 			return ResponseEntity.ok(list);
 		} catch (Exception t) {
-			t.printStackTrace();
+			log.error("Error al obtener los estados", t);
 			java.util.Map<String, String> err = new java.util.HashMap<>();
 			err.put(STR_ERROR, t.getClass().getName());
 			err.put("message", t.getMessage());

@@ -1,8 +1,6 @@
 package com.epiis.finalproject.business;
 
 import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -21,11 +19,11 @@ import com.epiis.finalproject.dto.response.course.ResponseCourseSearch;
 import com.epiis.finalproject.dto.response.course.ResponseCourseUpdate;
 import com.epiis.finalproject.entity.EntityCourse;
 import com.epiis.finalproject.entity.EntitySchool;
-
+import com.epiis.finalproject.helper.DateUtil;
+import com.epiis.finalproject.helper.ResponseMapBuilder;
 import com.epiis.finalproject.repository.RepositoryCourse;
 
 @Service
-
 public class BusinessCourse {
 	private final RepositoryCourse repositoryCourse;
 
@@ -36,69 +34,45 @@ public class BusinessCourse {
 	public ResponseCourseInsert insert(RequestCourseInsert request) {
 		ResponseCourseInsert response = new ResponseCourseInsert();
 
-		EntityCourse entityCourse = new EntityCourse();
-
 		EntitySchool entitySchool = new EntitySchool();
-
 		entitySchool.setIdSchool(request.getIdSchool());
 
+		EntityCourse entityCourse = new EntityCourse();
 		entityCourse.setIdCourse(UUID.randomUUID().toString());
 		entityCourse.setCode(request.getCode());
 		entityCourse.setNameCourse(request.getNameCourse());
 		entityCourse.setCategory(request.getCategory());
 		entityCourse.setCredits(request.getCredits());
 		entityCourse.setParentSchool(entitySchool);
-		entityCourse.setCreatedAt(new java.sql.Date(new Date().getTime()));
+		entityCourse.setCreatedAt(DateUtil.currentSqlDate());
 		entityCourse.setUpdatedAt(entityCourse.getCreatedAt());
 
 		repositoryCourse.save(entityCourse);
 
 		response.success();
 		response.getListMessage().add("Curso Registrado Exitosamente");
-
 		return response;
 	}
 
 	public Map<String, Object> getAll() {
-		ResponseCourseGetAll response = new ResponseCourseGetAll();
-
-		Map<String, Object> res = new HashMap<>();
-
-		List<EntityCourse> entityCourse = repositoryCourse.findAll();
-
-		response.success();
-		response.getListMessage().add("Cursos Entregados Correctamente");
-
-		res.put("message", response);
-		res.put("data", entityCourse);
-
-		return res;
+		return ResponseMapBuilder.buildDataMap(
+				new ResponseCourseGetAll(),
+				"Cursos Entregados Correctamente",
+				repositoryCourse.findAll());
 	}
 
 	public Map<String, Object> getById(String idCourse) {
-		ResponseCourseGetById response = new ResponseCourseGetById();
-
-		Map<String, Object> res = new HashMap<>();
-
-		Optional<EntityCourse> entityCourse = repositoryCourse.findById(idCourse);
-
-		response.success();
-		response.getListMessage().add("Curso Encontrado Correctamente");
-
-		res.put("message", response);
-		res.put("data", entityCourse);
-
-		return res;
+		return ResponseMapBuilder.buildDataMap(
+				new ResponseCourseGetById(),
+				"Curso Encontrado Correctamente",
+				repositoryCourse.findById(idCourse));
 	}
 
 	public ResponseCourseDeleteById deleteById(String idCourse) {
 		ResponseCourseDeleteById response = new ResponseCourseDeleteById();
-
 		repositoryCourse.deleteById(idCourse);
-
 		response.success();
 		response.getListMessage().add("Curso Eliminado Correctamente");
-
 		return response;
 	}
 
@@ -111,7 +85,6 @@ public class BusinessCourse {
 			EntityCourse entityCourse = optional.get();
 
 			EntitySchool entitySchool = new EntitySchool();
-
 			entitySchool.setIdSchool(request.getIdSchool());
 
 			entityCourse.setCode(request.getCode());
@@ -119,19 +92,17 @@ public class BusinessCourse {
 			entityCourse.setNameCourse(request.getNameCourse());
 			entityCourse.setCategory(request.getCategory());
 			entityCourse.setParentSchool(entitySchool);
-			entityCourse.setUpdatedAt(new java.sql.Date(new Date().getTime()));
+			entityCourse.setUpdatedAt(DateUtil.currentSqlDate());
 
 			repositoryCourse.save(entityCourse);
 
 			response.success();
 			response.getListMessage().add("Curso Actualizado Exitosamente");
-
 			return response;
 		}
 
 		response.error();
 		response.getListMessage().add("Error el Curso no se Actualizo");
-
 		return response;
 	}
 

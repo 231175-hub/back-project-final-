@@ -1,11 +1,13 @@
 package com.epiis.finalproject.business;
 
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+
+import com.epiis.finalproject.helper.DateUtil;
+import com.epiis.finalproject.helper.ResponseMapBuilder;
 
 import org.springframework.stereotype.Service;
 
@@ -46,7 +48,7 @@ public class BusinessAcademicPeriod {
 		entityAcademicPeriod.setStartDate(request.getStartDate());
 		entityAcademicPeriod.setEndDate(request.getEndDate());
 		entityAcademicPeriod.setStatus(request.getStatus() != null ? request.getStatus() : EnumAcademicPeriod.ACTIVE.toString());
-		entityAcademicPeriod.setCreatedAt(new java.sql.Date(new Date().getTime()));
+		entityAcademicPeriod.setCreatedAt(DateUtil.currentSqlDate());
 		entityAcademicPeriod.setUpdatedAt(entityAcademicPeriod.getCreatedAt());
 		
 		if (STATUS_ACTIVE.equals(request.getStatus())) {
@@ -116,35 +118,17 @@ public class BusinessAcademicPeriod {
 	}
 
 	public Map<String, Object> getAll() {
-		ResponseAcademicPeriodGetAll response = new ResponseAcademicPeriodGetAll();
-		
-		Map<String, Object> res = new HashMap<>();
-		
-		List<EntityAcademicPeriod> entityAcademicPeriod = repositoryAcademicperiod.findAll();
-		
-		response.success();
-		response.getListMessage().add("Periodos academicos Entregados Correctamente");
-		
-		res.put("message", response);
-		res.put("data", entityAcademicPeriod);
-		
-		return res;
+		return ResponseMapBuilder.buildDataMap(
+				new ResponseAcademicPeriodGetAll(),
+				"Periodos academicos Entregados Correctamente",
+				repositoryAcademicperiod.findAll());
 	}
-	
+
 	public Map<String, Object> getById(String idPeriod) {
-		ResponseAcademicPeriodGetAll response = new ResponseAcademicPeriodGetAll();
-		
-		Map<String, Object> res = new HashMap<>();
-		
-		Optional<EntityAcademicPeriod> entityAcademicPeriod = repositoryAcademicperiod.findById(idPeriod);
-		
-		response.success();
-		response.getListMessage().add("Periodo academico encontrado correctamente");
-		
-		res.put("message", response);
-		res.put("data", entityAcademicPeriod);
-		
-		return res;
+		return ResponseMapBuilder.buildDataMap(
+				new ResponseAcademicPeriodGetAll(),
+				"Periodo academico encontrado correctamente",
+				repositoryAcademicperiod.findById(idPeriod));
 	}
 	
 	public ResponseAcademicPeriodDeleteById deleteById(String idPeriod) {
@@ -187,7 +171,7 @@ public class BusinessAcademicPeriod {
 			entityAcademicPeriod.setStartDate(request.getStartDate());
 			entityAcademicPeriod.setEndDate(request.getEndDate());
 			entityAcademicPeriod.setStatus(request.getStatus());
-			entityAcademicPeriod.setUpdatedAt(new java.sql.Date(new Date().getTime()));
+			entityAcademicPeriod.setUpdatedAt(DateUtil.currentSqlDate());
 			
 			repositoryAcademicperiod.save(entityAcademicPeriod);
 			

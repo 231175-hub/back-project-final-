@@ -1,16 +1,18 @@
 package com.epiis.finalproject.business;
 
-import com.epiis.finalproject.repository.RepositoryGroupStudent;
 import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.epiis.finalproject.helper.DateUtil;
+import com.epiis.finalproject.helper.ResponseMapBuilder;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.epiis.finalproject.repository.RepositoryGroupStudent;
 
 import com.epiis.finalproject.dto.request.schedule.RequestScheduleInsert;
 import com.epiis.finalproject.dto.request.schedule.RequestScheduleUpdate;
@@ -72,7 +74,7 @@ public class BusinessSchedule {
 					entitySchedule.setParentGroup(entityGroup);
 
 					entitySchedule.setIdSchedule(UUID.randomUUID().toString());
-					entitySchedule.setCreatedAt(new java.sql.Date(new Date().getTime()));
+					entitySchedule.setCreatedAt(DateUtil.currentSqlDate());
 					entitySchedule.setUpdatedAt(entitySchedule.getCreatedAt());
 
 					listSchedules.add(entitySchedule);
@@ -89,19 +91,10 @@ public class BusinessSchedule {
 	}
 
 	public Map<String, Object> getById(String idSchedule) {
-		ResponseScheduleGetById response = new ResponseScheduleGetById();
-
-		Map<String, Object> res = new HashMap<>();
-
-		Optional<EntitySchedule> entitySchedule = repositorySchedule.findById(idSchedule);
-
-		response.success();
-		response.getListMessage().add("Horario Encontrado exitosamente");
-
-		res.put("message", response);
-		res.put("data", entitySchedule);
-
-		return res;
+		return ResponseMapBuilder.buildDataMap(
+				new ResponseScheduleGetById(),
+				"Horario Encontrado exitosamente",
+				repositorySchedule.findById(idSchedule));
 	}
 
 	public ResponseScheduleDeleteById deleteById(String idSchedule) {
@@ -132,7 +125,7 @@ public class BusinessSchedule {
 			entitySchedule.setEndTime(request.getEndTime());
 			entitySchedule.setClassroom(request.getClassroom());
 			entitySchedule.setParentGroup(entityGroup);
-			entitySchedule.setUpdatedAt(new java.sql.Date(new Date().getTime()));
+			entitySchedule.setUpdatedAt(DateUtil.currentSqlDate());
 
 			repositorySchedule.save(entitySchedule);
 

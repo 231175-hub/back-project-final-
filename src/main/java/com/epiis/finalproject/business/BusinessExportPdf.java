@@ -67,28 +67,46 @@ public class BusinessExportPdf {
                 .orElse(null);
     }
 
-    public byte[] generatePdfByUserEmail(String email) {
+    private EntityStudent findStudentOrThrow(String email) {
         EntityStudent student = findStudentByEmailOrId(email);
         if (student == null) {
             throw new IllegalArgumentException("Estudiante no encontrado para la cuenta actual.");
         }
-        return generatePdf(student.getIdStudent());
+        return student;
+    }
+
+    private Map<String, String> buildStudentData(EntityStudent estudiante) {
+        Map<String, String> studentData = new HashMap<>();
+        String fullName = (estudiante.getParentUser().getSurName() != null ? estudiante.getParentUser().getSurName() : "") + " " +
+                         (estudiante.getParentUser().getFirstName() != null ? estudiante.getParentUser().getFirstName() : "");
+        studentData.put(KEY_FULL_NAME, fullName.toUpperCase());
+        studentData.put(KEY_CAREER, estudiante.getParentSchool() != null ? estudiante.getParentSchool().getNameSchool().toUpperCase() : DEFAULT_CAREER);
+        studentData.put("code", estudiante.getCode() != null ? estudiante.getCode() : "");
+        return studentData;
+    }
+
+    private byte[] renderHtmlToPdf(String html, String errorMessage) {
+        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+            PdfRendererBuilder builder = new PdfRendererBuilder();
+            builder.withHtmlContent(html, "/");
+            builder.toStream(os);
+            builder.run();
+            return os.toByteArray();
+        } catch (Exception e) {
+            throw new IllegalStateException(errorMessage, e);
+        }
+    }
+
+    public byte[] generatePdfByUserEmail(String email) {
+        return generatePdf(findStudentOrThrow(email).getIdStudent());
     }
 
     public byte[] generateHistorialPdfByUserEmail(String email) {
-        EntityStudent student = findStudentByEmailOrId(email);
-        if (student == null) {
-            throw new IllegalArgumentException("Estudiante no encontrado para la cuenta actual.");
-        }
-        return generateHistorialPdf(student.getIdStudent());
+        return generateHistorialPdf(findStudentOrThrow(email).getIdStudent());
     }
 
     public byte[] generateSchedulePdfByUserEmail(String email) {
-        EntityStudent student = findStudentByEmailOrId(email);
-        if (student == null) {
-            throw new IllegalArgumentException("Estudiante no encontrado para la cuenta actual.");
-        }
-        return generateSchedulePdf(student.getIdStudent());
+        return generateSchedulePdf(findStudentOrThrow(email).getIdStudent());
     }
 
     public byte[] generatePdf(String idStudentKeycloak) {
@@ -107,13 +125,7 @@ public class BusinessExportPdf {
         int totalCredits = 0;
 
         if (estudiante != null) {
-            String fullName = (estudiante.getParentUser().getSurName() != null ? estudiante.getParentUser().getSurName() : "") + " " + 
-                             (estudiante.getParentUser().getFirstName() != null ? estudiante.getParentUser().getFirstName() : "");
-            String career = estudiante.getParentSchool() != null ? estudiante.getParentSchool().getNameSchool() : DEFAULT_CAREER;
-
-            studentData.put(KEY_FULL_NAME, fullName.toUpperCase()); 
-            studentData.put(KEY_CAREER, career.toUpperCase());
-            studentData.put("code", estudiante.getCode() != null ? estudiante.getCode() : ""); 
+            studentData = buildStudentData(estudiante);
             studentData.put("semester", semestreActual); 
             
             totalCredits = repositoryGroupStudent.sumTotalCreditsByStudentAndActivePeriod(estudiante.getIdStudent());
@@ -125,16 +137,7 @@ public class BusinessExportPdf {
         context.setVariable("totalCredits", totalCredits); 
 
         String html = templateEngine.process("constancia", context);
-
-        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-            PdfRendererBuilder builder = new PdfRendererBuilder();
-            builder.withHtmlContent(html, "/");
-            builder.toStream(os);
-            builder.run();
-            return os.toByteArray();
-        } catch (Exception e) {
-            throw new IllegalStateException("Error generating PDF", e);
-        }
+        return renderHtmlToPdf(html, "Error generating PDF");
     }
     
     public byte[] generateHistorialPdf(String idStudentKeycloak) {
@@ -171,12 +174,7 @@ public class BusinessExportPdf {
             }
         }
 
-        Map<String, String> studentData = new HashMap<>();
-        String fullName = (estudiante.getParentUser().getSurName() != null ? estudiante.getParentUser().getSurName() : "") + " " + 
-                         (estudiante.getParentUser().getFirstName() != null ? estudiante.getParentUser().getFirstName() : "");
-        studentData.put(KEY_FULL_NAME, fullName.toUpperCase()); 
-        studentData.put(KEY_CAREER, estudiante.getParentSchool() != null ? estudiante.getParentSchool().getNameSchool().toUpperCase() : DEFAULT_CAREER);
-        studentData.put("code", estudiante.getCode() != null ? estudiante.getCode() : "");
+        Map<String, String> studentData = buildStudentData(estudiante);
       
         Context context = new Context();
         context.setVariable(KEY_STUDENT, studentData);
@@ -184,16 +182,7 @@ public class BusinessExportPdf {
         context.setVariable("totalCreditosAprobados", totalCreditosAprobados);
 
         String html = templateEngine.process("historial", context); 
-
-        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-            PdfRendererBuilder builder = new PdfRendererBuilder();
-            builder.withHtmlContent(html, "/");
-            builder.toStream(os);
-            builder.run();
-            return os.toByteArray();
-        } catch (Exception e) {
-            throw new IllegalStateException("Error al generar el Historial en PDF", e);
-        }
+        return renderHtmlToPdf(html, "Error al generar el Historial en PDF");
     }
     
     public byte[] generateSchedulePdf(String idStudentKeycloak) {
@@ -205,12 +194,7 @@ public class BusinessExportPdf {
 
 		List<ResponseScheduleGetAll> scheduleList = repositoryGroupStudent.findCustomScheduleByStudentId(studentId);
 
-		Map<String, String> studentData = new HashMap<>();
-		String fullName = (estudiante.getParentUser().getSurName() != null ? estudiante.getParentUser().getSurName() : "") + " " + 
-                         (estudiante.getParentUser().getFirstName() != null ? estudiante.getParentUser().getFirstName() : "");
-		studentData.put(KEY_FULL_NAME, fullName.toUpperCase()); 
-		studentData.put(KEY_CAREER, estudiante.getParentSchool() != null ? estudiante.getParentSchool().getNameSchool().toUpperCase() : DEFAULT_CAREER);
-		studentData.put("code", estudiante.getCode() != null ? estudiante.getCode() : "");
+		Map<String, String> studentData = buildStudentData(estudiante);
 		
 		EntityAcademicPeriod periodoActivo = repositoryAcademicPeriod.findByStatus("Activo").orElse(null);
 		studentData.put("semester", periodoActivo != null ? (periodoActivo.getYearPeriod() + "-" + periodoActivo.getNumberPeriod()) : "NO DEFINIDO");
@@ -239,16 +223,7 @@ public class BusinessExportPdf {
 		context.setVariable("durations", durations);
 
 		String html = templateEngine.process("horario", context); 
-
-		try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-			PdfRendererBuilder builder = new PdfRendererBuilder();
-			builder.withHtmlContent(html, "/");
-			builder.toStream(os);
-			builder.run();
-			return os.toByteArray();
-		} catch (Exception e) {
-			throw new IllegalStateException("Error al generar el Horario en PDF", e);
-		}
+		return renderHtmlToPdf(html, "Error al generar el Horario en PDF");
 	}
 
     private Map<String, List<ResponseScheduleGetAll>> computeActiveHourly(List<ResponseScheduleGetAll> scheduleList) {

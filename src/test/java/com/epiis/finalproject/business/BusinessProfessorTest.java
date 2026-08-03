@@ -9,6 +9,7 @@ import com.epiis.finalproject.dto.response.professor.ResponseProfessorUpdate;
 import com.epiis.finalproject.dto.response.user.ResponseUserUpdatePassword;
 import com.epiis.finalproject.entity.EntityRole;
 import com.epiis.finalproject.entity.EntityUser;
+import com.epiis.finalproject.helper.PasswordUpdateHelper;
 import com.epiis.finalproject.repository.RepositoryProfessor;
 import com.epiis.finalproject.repository.RepositoryRole;
 import com.epiis.finalproject.repository.RepositoryUser;
@@ -18,11 +19,20 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class BusinessProfessorTest {
 
@@ -31,6 +41,7 @@ class BusinessProfessorTest {
     private PasswordEncoder passwordEncoder;
     private RepositoryRole repositoryRole;
     private EntityManager entityManager;
+    private PasswordUpdateHelper passwordUpdateHelper;
     private BusinessProfessor businessProfessor;
 
     @BeforeEach
@@ -40,9 +51,10 @@ class BusinessProfessorTest {
         passwordEncoder = mock(PasswordEncoder.class);
         repositoryRole = mock(RepositoryRole.class);
         entityManager = mock(EntityManager.class);
+        passwordUpdateHelper = mock(PasswordUpdateHelper.class);
 
         businessProfessor = new BusinessProfessor(
-                repositoryProfessor, repositoryUser, passwordEncoder, repositoryRole, entityManager
+                repositoryProfessor, repositoryUser, passwordEncoder, repositoryRole, entityManager, passwordUpdateHelper
         );
     }
 
@@ -136,21 +148,34 @@ class BusinessProfessorTest {
 
     @Test
     void testUpdatePassword() {
-        when(repositoryUser.findByEmail("nonexistent@test.com")).thenReturn(Optional.empty());
-
         RequestUserUpdatePassword request = new RequestUserUpdatePassword();
         request.setPassword("newpass");
+
+        ResponseUserUpdatePassword errorResp = new ResponseUserUpdatePassword();
+        errorResp.error();
+        errorResp.getListMessage().add("Contraseña de profesor no actualizada");
+
+        when(passwordUpdateHelper.updatePassword(
+                eq("nonexistent@test.com"), any(RequestUserUpdatePassword.class),
+                eq("Contraseña de profesor actualizada correctamente"),
+                eq("Contraseña de profesor no actualizada")))
+                .thenReturn(errorResp);
 
         ResponseUserUpdatePassword res1 = businessProfessor.updatePassword("nonexistent@test.com", request);
         assertEquals("error", res1.getType());
 
-        EntityUser user = new EntityUser();
-        when(repositoryUser.findByEmail("prof@test.com")).thenReturn(Optional.of(user));
-        when(passwordEncoder.encode("newpass")).thenReturn("encodedNew");
+        ResponseUserUpdatePassword successResp = new ResponseUserUpdatePassword();
+        successResp.success();
+        successResp.getListMessage().add("Contraseña de profesor actualizada correctamente");
+
+        when(passwordUpdateHelper.updatePassword(
+                eq("prof@test.com"), any(RequestUserUpdatePassword.class),
+                eq("Contraseña de profesor actualizada correctamente"),
+                eq("Contraseña de profesor no actualizada")))
+                .thenReturn(successResp);
 
         ResponseUserUpdatePassword res2 = businessProfessor.updatePassword("prof@test.com", request);
         assertEquals("success", res2.getType());
-        verify(repositoryUser, times(1)).save(user);
     }
 
     @Test

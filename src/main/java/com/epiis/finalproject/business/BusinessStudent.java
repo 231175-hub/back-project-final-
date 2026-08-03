@@ -9,6 +9,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import com.epiis.finalproject.helper.GradeCalculationHelper;
+import com.epiis.finalproject.helper.PasswordUpdateHelper;
+import com.epiis.finalproject.helper.DateUtil;
+import com.epiis.finalproject.helper.ResponseMapBuilder;
+import com.epiis.finalproject.helper.UserMutationHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +40,6 @@ import com.epiis.finalproject.entity.EntityStudent;
 import com.epiis.finalproject.entity.EntityUnits;
 import com.epiis.finalproject.entity.EntityUnitscore;
 import com.epiis.finalproject.entity.EntityUser;
-import java.util.UUID;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import com.epiis.finalproject.repository.RepositoryAttendance;
 import com.epiis.finalproject.repository.RepositoryGroup;
@@ -68,6 +72,7 @@ public class BusinessStudent {
 	private final RepositoryUnits repositoryUnits;
 	private final RepositoryAttendance repositoryAttendance;
 	private final EntityManager entityManager;
+	private final PasswordUpdateHelper passwordUpdateHelper;
 	
 	public BusinessStudent(
 			RepositoryStudent repositoryStudent, 
@@ -79,7 +84,8 @@ public class BusinessStudent {
 			RepositoryGroupStudent repositoryGroupStudent,
 			RepositoryUnits repositoryUnits,
 			RepositoryAttendance repositoryAttendance,
-			EntityManager entityManager) {
+			EntityManager entityManager,
+			PasswordUpdateHelper passwordUpdateHelper) {
 		this.repositoryStudent = repositoryStudent;
 		this.repositoryUser = repositoryUser;
 		this.repositoryRole = repositoryRole;
@@ -90,6 +96,7 @@ public class BusinessStudent {
 		this.repositoryUnits = repositoryUnits;
 		this.repositoryAttendance = repositoryAttendance;
 		this.entityManager = entityManager;
+		this.passwordUpdateHelper = passwordUpdateHelper;
 	}
 	
 	@Transactional
@@ -122,21 +129,13 @@ public class BusinessStudent {
 	        	return response;
 	        }
 
-	        String userId = UUID.randomUUID().toString();
-	    
-	        EntityUser entityUser = new EntityUser();
-	        entityUser.setIdUser(userId); 
-	        entityUser.setFirstName(request.getFirstName());
-	        entityUser.setSurName(request.getSurName());
-	        entityUser.setEmail(request.getEmail());
-	        entityUser.setPassword(passwordEncoder.encode(request.getPassword()));
-	        
+	        EntityUser entityUser = UserMutationHelper.buildEntityUser(
+	                request.getFirstName(), request.getSurName(), request.getEmail(), request.getPassword(), passwordEncoder);
+
 	        entityUser.setParentRole(roleStudent);
-	        entityUser.setCreatedAt(new java.sql.Date(new Date().getTime()));
-	        entityUser.setUpdatedAt(entityUser.getCreatedAt());
 	        
 	        EntityStudent entityStudent = new EntityStudent();
-	        entityStudent.setIdStudent(userId); 
+	        entityStudent.setIdStudent(entityUser.getIdUser());
 	        entityStudent.setCode(request.getCode());
 	        entityStudent.setTotalCredits(request.getTotalCredits());
 	        entityStudent.setStatus(EnumStudent.ACTIVE.toString());
@@ -155,7 +154,7 @@ public class BusinessStudent {
 	        response.getListMessage().add("Estudiante registrado correctamente.");
 	        
 	    } catch (Exception e) {
-	        e.printStackTrace();
+	        log.error("Error al registrar el estudiante", e);
 	        response.error();
 	        response.getListMessage().add("Error al registrar el estudiante: " + e.getMessage());
 	    }
@@ -164,15 +163,10 @@ public class BusinessStudent {
 	}
 	
 	public Map<String, Object> getAll(){
-		ResponseStudentGetAll response = new ResponseStudentGetAll();
-		Map<String, Object> res = new HashMap<>();
-		List<EntityStudent> entityStudent = repositoryStudent.studentsWithSchoolAndUser();
-		
-		response.success();
-		response.getListMessage().add("Estudiantes Entregados exitosamente");
-		res.put(KEY_MESSAGE, response);
-		res.put("data", entityStudent);
-		return res;
+		return ResponseMapBuilder.buildDataMap(
+				new ResponseStudentGetAll(),
+				"Estudiantes Entregados exitosamente",
+				repositoryStudent.studentsWithSchoolAndUser());
 	}
 	
 	public Map<String, Object> getById(String idStudent){
@@ -216,68 +210,50 @@ public class BusinessStudent {
 	}
 	
 	public ResponseStudentDeleteById deleteById(String idStudent) {
-		ResponseStudentDeleteById response = new ResponseStudentDeleteById();
-		repositoryStudent.deleteById(idStudent);
-		response.success();
-		response.getListMessage().add("Studiante Eliminado Correctamente");
-		return response;
+		return UserMutationHelper.deleteById(
+				new ResponseStudentDeleteById(), idStudent,
+				repositoryStudent::deleteById,
+				"Studiante Eliminado Correctamente");
 	}
 	
 	public ResponseStudentUpdate update(String idStudent, RequestStudentUpdate request) {
-		ResponseStudentUpdate response = new ResponseStudentUpdate();
-		Optional<EntityStudent> optional = repositoryStudent.findById(idStudent);
-		
-		if (optional.isPresent()) {
-			EntityStudent entityStudent = optional.get();
-			EntityUser entityUser = new EntityUser();
-			
-			EntityRole entityRole = new EntityRole();
-			EntitySchool entitySchool = new EntitySchool();
-			
-			entityRole.setIdRole(request.getIdRole());
-			entitySchool.setIdSchool(request.getIdSchool());
-			
-			entityUser.setFirstName(request.getFirstName());
-			entityUser.setSurName(request.getSurName());
-			entityUser.setEmail(request.getEmail());
-			entityUser.setParentRole(entityRole);
-			entityUser.setUpdatedAt(new java.sql.Date(new Date().getTime()));
-			
-			entityStudent.setCode(request.getCode());
-			entityStudent.setTotalCredits(request.getTotalCredits());
-			entityStudent.setParentSchool(entitySchool);
-			entityStudent.setParentUser(entityUser);
-			entityStudent.setUpdatedAt(new java.sql.Date(new Date().getTime()));
-			
-			repositoryUser.save(entityUser);
-			repositoryStudent.save(entityStudent);
-			
-			response.success();
-			response.getListMessage().add("Etudiante Actualizado Correctamente");
-			return response;
-		}
-		
-		response.error();
-		response.getListMessage().add("Error el Estudiante no se Actualizo");
-		return response;
+		return UserMutationHelper.updateExisting(
+				new ResponseStudentUpdate(),
+				repositoryStudent.findById(idStudent),
+				optional -> {
+					EntityStudent entityStudent = optional.get();
+					EntityUser entityUser = new EntityUser();
+
+					EntityRole entityRole = new EntityRole();
+					EntitySchool entitySchool = new EntitySchool();
+
+					entityRole.setIdRole(request.getIdRole());
+					entitySchool.setIdSchool(request.getIdSchool());
+
+					entityUser.setFirstName(request.getFirstName());
+					entityUser.setSurName(request.getSurName());
+					entityUser.setEmail(request.getEmail());
+					entityUser.setParentRole(entityRole);
+					entityUser.setUpdatedAt(DateUtil.currentSqlDate());
+
+					entityStudent.setCode(request.getCode());
+					entityStudent.setTotalCredits(request.getTotalCredits());
+					entityStudent.setParentSchool(entitySchool);
+					entityStudent.setParentUser(entityUser);
+					entityStudent.setUpdatedAt(DateUtil.currentSqlDate());
+
+					repositoryUser.save(entityUser);
+					repositoryStudent.save(entityStudent);
+				},
+				"Etudiante Actualizado Correctamente",
+				"Error el Estudiante no se Actualizo");
 	}
 	
 	public ResponseUserUpdatePassword updatePassword(String email, RequestUserUpdatePassword request) {
-		ResponseUserUpdatePassword response = new ResponseUserUpdatePassword();
-		Optional<EntityUser> optional = repositoryUser.findByEmail(email);
-		
-		if (optional.isPresent()) {
-			EntityUser entityUser = optional.get();
-			entityUser.setPassword(passwordEncoder.encode(request.getPassword()));
-			entityUser.setUpdatedAt(new java.sql.Date(new Date().getTime()));
-			repositoryUser.save(entityUser);
-			response.success();
-			response.getListMessage().add("Contraseña de estudiante actualizada correctamente");
-		} else {
-		    response.error();
-		    response.getListMessage().add("Contraseña de estudiante no actualizada");
-        }
-		return response;
+		return passwordUpdateHelper.updatePassword(
+				email, request,
+				"Contraseña de estudiante actualizada correctamente",
+				"Contraseña de estudiante no actualizada");
 	}
 	
 	public List<ResponseStudentSearch> searchStudentsForAutocomplete(String query, String idSchool) {
@@ -306,23 +282,12 @@ public class BusinessStudent {
 		return String.format(java.util.Locale.US, "%.1f", val);
 	}
     
-    private double getRoundedScoreValue(Double score) {
-        return score < 0 ? 0.0 : Math.round(score);
-    }
 
-	private EntityUnitscore findScoreForUnitInStudent(List<EntityUnitscore> savedScores, EntityUnits u) {
-		for (EntityUnitscore s : savedScores) {
-			if (s.getParentUnits().getIdUnits().equals(u.getIdUnits())) {
-				return s;
-			}
-		}
-		return null;
-	}
 
 	private double calculateUnitPfValue(EntityUnitscore score, EntityGroup entityGroup) {
-		double cc = getRoundedScoreValue(score.getConceptualScore());
-		double cp = getRoundedScoreValue(score.getPracticalScore());
-		double ca = getRoundedScoreValue(score.getAttitudinalScore());
+		double cc = GradeCalculationHelper.getRoundedScoreValue(score.getConceptualScore());
+		double cp = GradeCalculationHelper.getRoundedScoreValue(score.getPracticalScore());
+		double ca = GradeCalculationHelper.getRoundedScoreValue(score.getAttitudinalScore());
 
 		return cc * entityGroup.getConceptualWeight() +
 				cp * entityGroup.getPracticalWeight() +
@@ -337,7 +302,7 @@ public class BusinessStudent {
 			double[] sumOfUnitScoresRef,
 			boolean[] notasIncompletasRef) {
 		
-		EntityUnitscore score = findScoreForUnitInStudent(savedScores, u);
+		EntityUnitscore score = GradeCalculationHelper.findScoreForUnit(savedScores, u);
 
 		if (score == null) {
 			notasIncompletasRef[0] = true;
@@ -424,37 +389,13 @@ public class BusinessStudent {
 			EntityGroupStudent gs = repositoryGroupStudent.findByParentGroupAndParentStudent(entityGroup, entityStudent)
 					.orElseThrow(() -> new RuntimeException("El estudiante no está matriculado en este grupo."));
 
-			List<EntityUnitscore> savedScores = gs.getChildUnitscore() != null ? gs.getChildUnitscore() : new ArrayList<>();
 			List<EntityUnits> units = repositoryUnits.findByParentGroupOrderByNumberUnitAsc(entityGroup);
-			
-			double[] sumOfUnitScoresRef = new double[1];
-			boolean[] notasIncompletasRef = new boolean[1];
-			Map<String, Object> notasAlumno = calculateUnitGrades(units, savedScores, entityGroup, sumOfUnitScoresRef, notasIncompletasRef);
-			
-			double sumOfUnitScores = sumOfUnitScoresRef[0];
-			boolean notasIncompletas = notasIncompletasRef[0];
-
-			if (notasIncompletas) {
-				notasAlumno.put("PPF", "-");
-			} else {
-				double rawPpf = sumOfUnitScores / units.size();
-				if (rawPpf == 0) {
-					notasAlumno.put("PPF", "NSP");
-				} else {
-					notasAlumno.put("PPF", String.valueOf(Math.round(rawPpf)));
-				}
-			}
-
-			response.put("notas", notasAlumno);
-
 			List<EntityAttendance> attendances = repositoryAttendance.findByParentGroupStudentIn(Arrays.asList(gs));
-			Map<String, Integer> resumenAsistencia = calculateAttendanceSummary(attendances);
 
-			response.put("asistencia", resumenAsistencia);
-			response.put(KEY_SUCCESS, true);
+			return getGradesByGroupStudentPreloaded(gs, units, attendances);
 			
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error("Error al procesar el registro", e);
 			response.put(KEY_SUCCESS, false);
 			response.put(KEY_ERROR, "Error al procesar el registro: " + e.getMessage());
 		}
@@ -479,16 +420,7 @@ public class BusinessStudent {
 			double sumOfUnitScores = sumOfUnitScoresRef[0];
 			boolean notasIncompletas = notasIncompletasRef[0];
 
-			if (notasIncompletas) {
-				notasAlumno.put("PPF", "-");
-			} else {
-				double rawPpf = sumOfUnitScores / (units.isEmpty() ? 1 : units.size());
-				if (rawPpf == 0) {
-					notasAlumno.put("PPF", "NSP");
-				} else {
-					notasAlumno.put("PPF", String.valueOf(Math.round(rawPpf)));
-				}
-			}
+			notasAlumno.put("PPF", GradeCalculationHelper.calculatePpfLabel(sumOfUnitScores, units.size(), notasIncompletas));
 
 			response.put("notas", notasAlumno);
 
@@ -498,7 +430,7 @@ public class BusinessStudent {
 			response.put(KEY_SUCCESS, true);
 			
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error("Error al procesar el registro", e);
 			response.put(KEY_SUCCESS, false);
 			response.put(KEY_ERROR, "Error al procesar el registro: " + e.getMessage());
 		}
@@ -573,7 +505,7 @@ public class BusinessStudent {
             response.put("data", listaBoletas);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error al cargar las boletas del semestre", e);
             response.put(KEY_SUCCESS, false);
             response.put(KEY_ERROR, "Error al cargar las boletas del semestre: " + e.getMessage());
         }

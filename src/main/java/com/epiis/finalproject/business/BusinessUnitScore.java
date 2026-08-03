@@ -1,8 +1,5 @@
 package com.epiis.finalproject.business;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -19,6 +16,8 @@ import com.epiis.finalproject.dto.response.unitscore.ResponseUnitScoreUpdate;
 import com.epiis.finalproject.entity.EntityGroupStudent;
 import com.epiis.finalproject.entity.EntityUnits;
 import com.epiis.finalproject.entity.EntityUnitscore;
+import com.epiis.finalproject.helper.DateUtil;
+import com.epiis.finalproject.helper.ResponseMapBuilder;
 import com.epiis.finalproject.repository.RepositoryUnitScore;
 
 @Service
@@ -32,69 +31,46 @@ public class BusinessUnitScore {
 	public ResponseUnitScoreInsert insert(RequestUnitScoreInsert request) {
 		ResponseUnitScoreInsert response = new ResponseUnitScoreInsert();
 		
-		EntityUnitscore entityUnitscore = new EntityUnitscore();
-		
 		EntityGroupStudent entityGroupStudent = new EntityGroupStudent();
-		EntityUnits entityUnits = new EntityUnits();
-		
 		entityGroupStudent.setIdGroupStudent(request.getIdGroupStudent());
+
+		EntityUnits entityUnits = new EntityUnits();
 		entityUnits.setIdUnits(request.getIdUnits());
 		
+		EntityUnitscore entityUnitscore = new EntityUnitscore();
 		entityUnitscore.setIdUnitScore(UUID.randomUUID().toString());
 		entityUnitscore.setParentGroupStudent(entityGroupStudent);
 		entityUnitscore.setParentUnits(entityUnits);
 		entityUnitscore.setScore(request.getScore());
-		entityUnitscore.setCreatedAt(new java.sql.Date(new Date().getTime()));
+		entityUnitscore.setCreatedAt(DateUtil.currentSqlDate());
 		entityUnitscore.setUpdatedAt(entityUnitscore.getCreatedAt());
 		
 		repositoryUnitScore.save(entityUnitscore);
 		
 		response.success();
 		response.getListMessage().add("Notas Ingresadas Correctamente");
-		
 		return response;
 	}
 	
 	public Map<String, Object> getAll() {
-		ResponseUnitScoreGetAll response = new ResponseUnitScoreGetAll();
-		
-		Map<String, Object> res = new HashMap<>();
-		
-		List<EntityUnitscore> entityUnitScore = repositoryUnitScore.findAll();
-		
-		response.success();
-		response.getListMessage().add("Notas Entregadas Corretamente");
-		
-		res.put("message", response);
-		res.put("data", entityUnitScore);
-		
-		return res;
+		return ResponseMapBuilder.buildDataMap(
+				new ResponseUnitScoreGetAll(),
+				"Notas Entregadas Corretamente",
+				repositoryUnitScore.findAll());
 	}
 	
 	public Map<String, Object> getById(String idUnitScore) {
-		ResponseUnitScoreGetById response = new ResponseUnitScoreGetById();
-		
-		Map<String, Object> res = new HashMap<>();
-		
-		Optional<EntityUnitscore> entityUnitScore  = repositoryUnitScore.findById(idUnitScore);
-		
-		response.success();
-		response.getListMessage().add("Nota Encontrada Corretamente");
-		
-		res.put("message", response);
-		res.put("data", entityUnitScore);
-		
-		return res;
+		return ResponseMapBuilder.buildDataMap(
+				new ResponseUnitScoreGetById(),
+				"Nota Encontrada Corretamente",
+				repositoryUnitScore.findById(idUnitScore));
 	}
 	
 	public ResponseUnitScoreDeleteById deleteById(String idUnitScore) {
 		ResponseUnitScoreDeleteById response = new ResponseUnitScoreDeleteById();
-		
 		repositoryUnitScore.deleteById(idUnitScore);
-		
 		response.success();
 		response.getListMessage().add("Notas Eliminada Correctamente");
-		
 		return response;
 	}
 	
@@ -107,25 +83,23 @@ public class BusinessUnitScore {
 			EntityUnitscore entityUnitscore = optional.get();
 			
 			EntityGroupStudent entityGroupStudent = new EntityGroupStudent();
-			EntityUnits entityUnits = new EntityUnits();
-			
 			entityGroupStudent.setIdGroupStudent(request.getIdGroupStudent());
+
+			EntityUnits entityUnits = new EntityUnits();
 			entityUnits.setIdUnits(request.getIdUnits());
 			
 			entityUnitscore.setParentGroupStudent(entityGroupStudent);
 			entityUnitscore.setParentUnits(entityUnits);
 			entityUnitscore.setScore(request.getScore());
-			entityUnitscore.setUpdatedAt(new java.sql.Date(new Date().getTime()));
+			entityUnitscore.setUpdatedAt(DateUtil.currentSqlDate());
 			
 			response.success();
 			response.getListMessage().add("Nota actualizada correctamente");
-			
 			return response;
 		}
 		
 		response.error();
 		response.getListMessage().add("Error la Nota no se Actualizo");
-		
 		return response;
 	}
 }

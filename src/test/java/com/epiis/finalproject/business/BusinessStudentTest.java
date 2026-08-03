@@ -3,21 +3,50 @@ package com.epiis.finalproject.business;
 import com.epiis.finalproject.dto.request.student.RequestStudentInsert;
 import com.epiis.finalproject.dto.request.student.RequestStudentUpdate;
 import com.epiis.finalproject.dto.request.user.RequestUserUpdatePassword;
-import com.epiis.finalproject.dto.response.student.*;
+import com.epiis.finalproject.dto.response.student.ResponseStudentDeleteById;
+import com.epiis.finalproject.dto.response.student.ResponseStudentInsert;
+import com.epiis.finalproject.dto.response.student.ResponseStudentSearch;
+import com.epiis.finalproject.dto.response.student.ResponseStudentUpdate;
 import com.epiis.finalproject.dto.response.user.ResponseUserUpdatePassword;
-import com.epiis.finalproject.entity.*;
-import com.epiis.finalproject.repository.*;
+import com.epiis.finalproject.entity.EntityAttendance;
+import com.epiis.finalproject.entity.EntityCourse;
+import com.epiis.finalproject.entity.EntityGroup;
+import com.epiis.finalproject.entity.EntityGroupStudent;
+import com.epiis.finalproject.entity.EntityRole;
+import com.epiis.finalproject.entity.EntitySchool;
+import com.epiis.finalproject.entity.EntityStudent;
+import com.epiis.finalproject.entity.EntityUnits;
+import com.epiis.finalproject.entity.EntityUnitscore;
+import com.epiis.finalproject.entity.EntityUser;
+import com.epiis.finalproject.helper.PasswordUpdateHelper;
+import com.epiis.finalproject.repository.RepositoryAttendance;
+import com.epiis.finalproject.repository.RepositoryGroup;
+import com.epiis.finalproject.repository.RepositoryGroupStudent;
+import com.epiis.finalproject.repository.RepositoryRole;
+import com.epiis.finalproject.repository.RepositorySchool;
+import com.epiis.finalproject.repository.RepositoryStudent;
+import com.epiis.finalproject.repository.RepositoryUnits;
+import com.epiis.finalproject.repository.RepositoryUser;
 import com.epiis.finalproject.staticdata.EnumRoles;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class BusinessStudentTest {
 
@@ -31,6 +60,7 @@ class BusinessStudentTest {
     private RepositoryUnits repositoryUnits;
     private RepositoryAttendance repositoryAttendance;
     private EntityManager entityManager;
+    private PasswordUpdateHelper passwordUpdateHelper;
 
     private BusinessStudent businessStudent;
 
@@ -46,11 +76,13 @@ class BusinessStudentTest {
         repositoryUnits = mock(RepositoryUnits.class);
         repositoryAttendance = mock(RepositoryAttendance.class);
         entityManager = mock(EntityManager.class);
+        passwordUpdateHelper = mock(PasswordUpdateHelper.class);
 
         businessStudent = new BusinessStudent(
                 repositoryStudent, repositoryUser, repositoryRole, repositorySchool,
                 passwordEncoder, repositoryGroup, repositoryGroupStudent,
-                repositoryUnits, repositoryAttendance, entityManager
+                repositoryUnits, repositoryAttendance, entityManager,
+                passwordUpdateHelper
         );
     }
 
@@ -146,17 +178,32 @@ class BusinessStudentTest {
 
     @Test
     void testUpdatePassword() {
-        EntityUser user = new EntityUser();
-        user.setEmail("test@test.com");
-        when(repositoryUser.findByEmail("test@test.com")).thenReturn(Optional.of(user));
-
         RequestUserUpdatePassword req = new RequestUserUpdatePassword();
         req.setPassword("newpass");
+
+        ResponseUserUpdatePassword successResp = new ResponseUserUpdatePassword();
+        successResp.success();
+        successResp.getListMessage().add("Contraseña de estudiante actualizada correctamente");
+
+        when(passwordUpdateHelper.updatePassword(
+                eq("test@test.com"), any(RequestUserUpdatePassword.class),
+                eq("Contraseña de estudiante actualizada correctamente"),
+                eq("Contraseña de estudiante no actualizada")))
+                .thenReturn(successResp);
 
         ResponseUserUpdatePassword response = businessStudent.updatePassword("test@test.com", req);
         assertEquals("success", response.getType());
 
-        when(repositoryUser.findByEmail("notFound@test.com")).thenReturn(Optional.empty());
+        ResponseUserUpdatePassword errorResp = new ResponseUserUpdatePassword();
+        errorResp.error();
+        errorResp.getListMessage().add("Contraseña de estudiante no actualizada");
+
+        when(passwordUpdateHelper.updatePassword(
+                eq("notFound@test.com"), any(RequestUserUpdatePassword.class),
+                eq("Contraseña de estudiante actualizada correctamente"),
+                eq("Contraseña de estudiante no actualizada")))
+                .thenReturn(errorResp);
+
         ResponseUserUpdatePassword responseError = businessStudent.updatePassword("notFound@test.com", req);
         assertEquals("error", responseError.getType());
     }

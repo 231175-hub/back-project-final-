@@ -3,9 +3,13 @@ package com.epiis.finalproject.business;
 import com.epiis.finalproject.dto.request.groupregister.RequestGroupRegisterSave;
 import com.epiis.finalproject.dto.response.groupregister.ResponseGroupRegisterData;
 import com.epiis.finalproject.entity.*;
+import com.epiis.finalproject.helper.GradeCalculationHelper;
 import com.epiis.finalproject.repository.*;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.time.DayOfWeek;
@@ -17,6 +21,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class BusinessGroupRegister {
+    private static final Logger log = LoggerFactory.getLogger(BusinessGroupRegister.class);
     private static final String MSG_GROUP_NOT_FOUND = "Grupo no encontrado";
     private static final String DATE_FORMAT_PATTERN = "dd-MM-yyyy";
     private static final String KEY_SUCCESS = "success";
@@ -78,7 +83,7 @@ public class BusinessGroupRegister {
             response.getListMessage().add("Estructura de registro cargada correctamente.");
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error al obtener el registro", e);
             response.setSuccess(false);
             response.getListMessage().add("Error al obtener el registro: " + e.getMessage());
         }
@@ -126,7 +131,7 @@ public class BusinessGroupRegister {
 
         // Check if group is closed
         boolean isClosed = false;
-        if (!enrollments.isEmpty()) {
+        if (period != null && !enrollments.isEmpty()) {
             EntityGroupStudent first = enrollments.get(0);
             Optional<EntityCourseEnrollment> enrollmentOpt = repositoryCourseEnrollment.findByStudentCourseAndPeriod(
                     first.getParentStudent().getIdStudent(),
@@ -366,7 +371,7 @@ public class BusinessGroupRegister {
             response.put("message", "Datos guardados correctamente.");
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error al guardar los datos", e);
             response.put(KEY_SUCCESS, false);
             response.put("error", "Error al guardar los datos: " + e.getMessage());
         }
@@ -587,7 +592,7 @@ public class BusinessGroupRegister {
             response.put("message", "Acta cerrada exitosamente. Las notas finales y créditos se han actualizado en el historial y perfil del estudiante.");
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error al cerrar el acta", e);
             response.put(KEY_SUCCESS, false);
             response.put("error", e.getMessage());
         }
@@ -595,22 +600,7 @@ public class BusinessGroupRegister {
         return response;
     }
 
-    private EntityUnitscore findScoreForUnit(List<EntityUnitscore> savedScores, EntityUnits u) {
-        for (EntityUnitscore s : savedScores) {
-            if (s.getParentUnits().getIdUnits().equals(u.getIdUnits())) {
-                return s;
-            }
-        }
-        return null;
-    }
 
-    private boolean isAnyComponentNull(EntityUnitscore score) {
-        return score.getConceptualScore() == null || score.getPracticalScore() == null || score.getAttitudinalScore() == null;
-    }
-
-    private double getRoundedScoreValue(Double val) {
-        return val < 0 ? 0.0 : Math.round(val);
-    }
 
     private int calculateStudentFinalScore(EntityGroupStudent gs, List<EntityUnits> units, EntityGroup group) {
         String code = gs.getParentStudent().getCode();
@@ -623,16 +613,16 @@ public class BusinessGroupRegister {
         double sumOfUnitScores = 0;
 
         for (EntityUnits u : units) {
-            EntityUnitscore score = findScoreForUnit(savedScores, u);
+            EntityUnitscore score = GradeCalculationHelper.findScoreForUnit(savedScores, u);
 
-            if (score == null || isAnyComponentNull(score)) {
+            if (score == null || score.getConceptualScore() == null || score.getPracticalScore() == null || score.getAttitudinalScore() == null) {
                 throw new IllegalStateException("Faltan notas para el alumno " + code + " en la unidad " + u.getNumberUnit() + ".");
             }
 
             // Treat NSP (-1.0) as 0.0 for average calculations, and round component grades
-            double cc = getRoundedScoreValue(score.getConceptualScore());
-            double cp = getRoundedScoreValue(score.getPracticalScore());
-            double ca = getRoundedScoreValue(score.getAttitudinalScore());
+            double cc = GradeCalculationHelper.getRoundedScoreValue(score.getConceptualScore());
+            double cp = GradeCalculationHelper.getRoundedScoreValue(score.getPracticalScore());
+            double ca = GradeCalculationHelper.getRoundedScoreValue(score.getAttitudinalScore());
 
             // Calculate Unit PF
             double unitPf = cc * group.getConceptualWeight() +
@@ -670,15 +660,15 @@ public class BusinessGroupRegister {
             Date now,
             List<EntityGradeLog> logsList) {
         if (!Objects.equals(oldValue, newValue)) {
-            EntityGradeLog log = new EntityGradeLog();
-            log.setIdGradeLog(UUID.randomUUID().toString());
-            log.setIdUnitScore(idUnitScore);
-            log.setFieldName(fieldName);
-            log.setPreviousScore(oldValue);
-            log.setNewScore(newValue);
-            log.setModifiedBy(user);
-            log.setCreatedAt(now);
-            logsList.add(log);
+            EntityGradeLog gradeLog = new EntityGradeLog();
+            gradeLog.setIdGradeLog(UUID.randomUUID().toString());
+            gradeLog.setIdUnitScore(idUnitScore);
+            gradeLog.setFieldName(fieldName);
+            gradeLog.setPreviousScore(oldValue);
+            gradeLog.setNewScore(newValue);
+            gradeLog.setModifiedBy(user);
+            gradeLog.setCreatedAt(now);
+            logsList.add(gradeLog);
         }
     }
 }

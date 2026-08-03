@@ -1,12 +1,14 @@
 package com.epiis.finalproject.business;
 
 import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
+
+import com.epiis.finalproject.helper.DateUtil;
+import com.epiis.finalproject.helper.ResponseMapBuilder;
+import com.epiis.finalproject.helper.UserMutationHelper;
+import java.util.HashMap;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -24,6 +26,7 @@ import com.epiis.finalproject.entity.EntityProfessor;
 import com.epiis.finalproject.entity.EntityRole;
 import com.epiis.finalproject.entity.EntityUser;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import com.epiis.finalproject.helper.PasswordUpdateHelper;
 import com.epiis.finalproject.repository.RepositoryProfessor;
 import com.epiis.finalproject.repository.RepositoryRole;
 import com.epiis.finalproject.repository.RepositoryUser;
@@ -32,20 +35,26 @@ import com.epiis.finalproject.staticdata.EnumRoles;
 
 import jakarta.transaction.Transactional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Service
 public class BusinessProfessor {
+	private static final Logger log = LoggerFactory.getLogger(BusinessProfessor.class);
 	private final RepositoryProfessor repositoryProfessor;
 	private final RepositoryUser repositoryUser;
 	private final PasswordEncoder passwordEncoder;
 	private final RepositoryRole repositoryRole;
 	private final EntityManager entityManager;
+	private final PasswordUpdateHelper passwordUpdateHelper;
 	
-	public BusinessProfessor(RepositoryProfessor repositoryProfessor, RepositoryUser repositoryUser, PasswordEncoder passwordEncoder, RepositoryRole repositoryRole, EntityManager entityManager) {
+	public BusinessProfessor(RepositoryProfessor repositoryProfessor, RepositoryUser repositoryUser, PasswordEncoder passwordEncoder, RepositoryRole repositoryRole, EntityManager entityManager, PasswordUpdateHelper passwordUpdateHelper) {
 		this.repositoryProfessor = repositoryProfessor;
 		this.repositoryUser = repositoryUser;
 		this.passwordEncoder = passwordEncoder;
 		this.repositoryRole = repositoryRole;
 		this.entityManager = entityManager;
+		this.passwordUpdateHelper = passwordUpdateHelper;
 	}
 	
 	@Transactional
@@ -65,19 +74,11 @@ public class BusinessProfessor {
 				return response;
 			}
 
-			String userId = UUID.randomUUID().toString();
-		
-			EntityUser entityUser = new EntityUser();
-			entityUser.setIdUser(userId);
-			entityUser.setFirstName(request.getFirstName());
-			entityUser.setSurName(request.getSurName());
-			entityUser.setEmail(request.getEmail());
-			entityUser.setPassword(passwordEncoder.encode(request.getPassword()));
-			entityUser.setCreatedAt(new java.sql.Date(new Date().getTime()));
-			entityUser.setUpdatedAt(entityUser.getCreatedAt());
+			EntityUser entityUser = UserMutationHelper.buildEntityUser(
+					request.getFirstName(), request.getSurName(), request.getEmail(), request.getPassword(), passwordEncoder);
 			
 			EntityProfessor entityProfessor = new EntityProfessor();
-			entityProfessor.setIdProfessor(userId);
+			entityProfessor.setIdProfessor(entityUser.getIdUser());
 			entityProfessor.setParentUser(entityUser);
 			entityProfessor.setCreatedAt(entityUser.getCreatedAt());
 			entityProfessor.setUpdatedAt(entityUser.getCreatedAt());
@@ -91,7 +92,7 @@ public class BusinessProfessor {
 			response.getListMessage().add("Profesor registrado correctamente.");
 			
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error("Error al registrar el profesor", e);
 			response.error();
 			response.getListMessage().add("Error al registrar el profesor: " + e.getMessage());
 		}
@@ -100,110 +101,61 @@ public class BusinessProfessor {
 	}
 	
 	public Map<String, Object> getAll(){
-		ResponseProfessorGetAll response = new ResponseProfessorGetAll();
-		
-		List<EntityProfessor> entityProfessor = repositoryProfessor.findAll();
-		
-		Map<String, Object> res = new HashMap<>();
-		
-		response.success();
-		response.getListMessage().add("Profesores entregados correctamente");
-		
-		res.put("message", response);
-		res.put("data", entityProfessor);
-		
-		return res;
+		return ResponseMapBuilder.buildDataMap(
+				new ResponseProfessorGetAll(),
+				"Profesores entregados correctamente",
+				repositoryProfessor.findAll());
 	}
 	
 	public Map<String, Object> getById(String idProfessor){
-		ResponseProfessorGetById response = new ResponseProfessorGetById();
-		
-		Map<String, Object> res = new HashMap<>();
-		
-		Optional<EntityUser> entity = repositoryUser.findById(idProfessor);
-		
-		response.success();
-		response.getListMessage().add("Profesor encontrado exitosamente");
-		
-		res.put("message", response);
-		res.put("data", entity);
-		
-		return res;
+		return ResponseMapBuilder.buildDataMap(
+				new ResponseProfessorGetById(),
+				"Profesor encontrado exitosamente",
+				repositoryUser.findById(idProfessor));
 	}
 	
 	public ResponseProfessorDeleteById deleteById(String idProfessor) {
-		ResponseProfessorDeleteById response = new ResponseProfessorDeleteById();
-		
-		repositoryProfessor.deleteById(idProfessor);
-		
-		response.success();
-		response.getListMessage().add("Profesor eliminado correctamente");
-		
-		return response;
+		return UserMutationHelper.deleteById(
+				new ResponseProfessorDeleteById(), idProfessor,
+				repositoryProfessor::deleteById,
+				"Profesor eliminado correctamente");
 	}
 	
 	public ResponseProfessorUpdate update(String idUser, RequestProfessorUpdate request) {
-		ResponseProfessorUpdate response = new ResponseProfessorUpdate();
-		
-		Optional<EntityUser> optional = repositoryUser.findById(idUser);
-		
-		if (optional.isPresent()) {
-			EntityUser entityUser = optional.get();
-			
-			entityUser.setFirstName(request.getFirstName());
-			entityUser.setSurName(request.getSurName());
-			entityUser.setEmail(request.getEmail());
-			entityUser.setUpdatedAt(new java.sql.Date(new Date().getTime()));
-			
-			repositoryUser.save(entityUser);
-			
-			EntityRole entityRole = new EntityRole();
-			
-			entityRole.setIdRole(request.getIdRole());
-			
-			if ("Professor".equals(entityRole.getNameRole())) {
-				EntityProfessor entityProfessor = new EntityProfessor();
-				
-				entityProfessor.setIdProfessor(UUID.randomUUID().toString());
-				entityProfessor.setParentUser(entityUser);
-				entityProfessor.setCreatedAt(entityUser.getCreatedAt());
-				entityProfessor.setUpdatedAt(entityUser.getCreatedAt());
-				
-				repositoryProfessor.save(entityProfessor);
-			}
-			
-			response.success();
-			response.getListMessage().add("Profesor actualizado correctamente");
-			
-			return response;
-		}
-		
-		response.error();
-		response.getListMessage().add("Error el profesor no se actualizo");
-		
-		return response;
+		return UserMutationHelper.updateUser(
+				repositoryUser, new ResponseProfessorUpdate(), idUser,
+				entityUser -> {
+					entityUser.setFirstName(request.getFirstName());
+					entityUser.setSurName(request.getSurName());
+					entityUser.setEmail(request.getEmail());
+					entityUser.setUpdatedAt(DateUtil.currentSqlDate());
+
+					repositoryUser.save(entityUser);
+
+					EntityRole entityRole = new EntityRole();
+
+					entityRole.setIdRole(request.getIdRole());
+
+					if ("Professor".equals(entityRole.getNameRole())) {
+						EntityProfessor entityProfessor = new EntityProfessor();
+
+						entityProfessor.setIdProfessor(UUID.randomUUID().toString());
+						entityProfessor.setParentUser(entityUser);
+						entityProfessor.setCreatedAt(entityUser.getCreatedAt());
+						entityProfessor.setUpdatedAt(entityUser.getCreatedAt());
+
+						repositoryProfessor.save(entityProfessor);
+					}
+				},
+				"Profesor actualizado correctamente",
+				"Error el profesor no se actualizo");
 	}
 	
 	public ResponseUserUpdatePassword updatePassword(String email, RequestUserUpdatePassword request) {
-		ResponseUserUpdatePassword response = new ResponseUserUpdatePassword();
-		
-		Optional<EntityUser> optional = repositoryUser.findByEmail(email);
-		
-		if (optional.isPresent()) {
-			EntityUser entityUser = optional.get();
-			entityUser.setPassword(passwordEncoder.encode(request.getPassword()));
-			entityUser.setUpdatedAt(new java.sql.Date(new Date().getTime()));
-			repositoryUser.save(entityUser);
-			
-			response.success();
-			response.getListMessage().add("Contraseña de profesor actualizada correctamente");
-			return response;
-		}
-		
-		response.error();
-		response.getListMessage().add("Contraseña de profesor no actualizada");
-		
-		return response;
+		return passwordUpdateHelper.updatePassword(
+				email, request,
+				"Contraseña de profesor actualizada correctamente",
+				"Contraseña de profesor no actualizada");
 	}
 	
 	public List<Map<String, Object>> searchProfessorsForAutocomplete(String query) {

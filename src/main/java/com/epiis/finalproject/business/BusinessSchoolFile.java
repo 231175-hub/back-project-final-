@@ -5,7 +5,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -19,6 +18,7 @@ import com.epiis.finalproject.entity.EntitySchool;
 import com.epiis.finalproject.entity.EntitySchoolfile;
 import com.epiis.finalproject.repository.RepositorySchool;
 import com.epiis.finalproject.repository.RepositorySchoolFile;
+import com.epiis.finalproject.helper.DateUtil;
 
 @Service
 public class BusinessSchoolFile {
@@ -80,7 +80,7 @@ public class BusinessSchoolFile {
 				entitySchoolfile.setParentSchool(entitySchool);
 				entitySchoolfile.setName(fileName);
 				entitySchoolfile.setExtension(extension);
-				entitySchoolfile.setCreatedAt(new java.sql.Date(new Date().getTime()));
+				entitySchoolfile.setCreatedAt(DateUtil.currentSqlDate());
 				entitySchoolfile.setUpdatedAt(entitySchoolfile.getCreatedAt());
 				
 				listEntitySchoolFile.add(entitySchoolfile);

@@ -30,7 +30,6 @@
 		<java.version>17</java.version>
 		<sonar.host.url>http://localhost:9000</sonar.host.url>
 		<sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
-		<sonar.coverage.exclusions>**/dto/**,**/entity/**,**/generic/**</sonar.coverage.exclusions>
 	</properties>
 	<dependencies>
 		<dependency>

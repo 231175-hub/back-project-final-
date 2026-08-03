@@ -2,8 +2,15 @@ package com.epiis.finalproject.business;
 
 import com.epiis.finalproject.dto.request.schedule.RequestScheduleInsert;
 import com.epiis.finalproject.dto.request.schedule.RequestScheduleUpdate;
-import com.epiis.finalproject.dto.response.schedule.*;
-import com.epiis.finalproject.entity.*;
+import com.epiis.finalproject.dto.response.schedule.ResponseScheduleDeleteById;
+import com.epiis.finalproject.dto.response.schedule.ResponseScheduleGetAll;
+import com.epiis.finalproject.dto.response.schedule.ResponseScheduleInsert;
+import com.epiis.finalproject.dto.response.schedule.ResponseScheduleUpdate;
+import com.epiis.finalproject.entity.EntityGroup;
+import com.epiis.finalproject.entity.EntityProfessor;
+import com.epiis.finalproject.entity.EntitySchedule;
+import com.epiis.finalproject.entity.EntityStudent;
+import com.epiis.finalproject.entity.EntityUser;
 import com.epiis.finalproject.repository.RepositoryGroup;
 import com.epiis.finalproject.repository.RepositoryGroupStudent;
 import com.epiis.finalproject.repository.RepositorySchedule;
@@ -11,10 +18,20 @@ import com.epiis.finalproject.repository.RepositoryUser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.anyList;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class BusinessScheduleTest {
 
@@ -44,8 +61,10 @@ class BusinessScheduleTest {
 
         when(repositoryGroup.findById("g1")).thenReturn(Optional.empty());
 
-        List<RequestScheduleInsert> list = List.of(req);
-        assertThrows(IllegalArgumentException.class, () -> businessSchedule.insert(list));
+        List<RequestScheduleInsert> requestList = List.of(req);
+        assertThrows(IllegalArgumentException.class, () -> {
+            businessSchedule.insert(requestList);
+        });
     }
 
     @Test
@@ -87,14 +106,18 @@ class BusinessScheduleTest {
         when(repositoryUser.findById("unknown")).thenReturn(Optional.empty());
 
         List<RequestScheduleInsert> list1 = List.of(req);
-        assertThrows(IllegalArgumentException.class, () -> businessSchedule.insert(list1));
+        assertThrows(IllegalArgumentException.class, () -> {
+            businessSchedule.insert(list1);
+        });
 
         EntityUser notProfUser = new EntityUser();
         when(repositoryUser.findById("notProf")).thenReturn(Optional.of(notProfUser));
         req.setIdProfessor("notProf");
 
         List<RequestScheduleInsert> list2 = List.of(req);
-        assertThrows(IllegalStateException.class, () -> businessSchedule.insert(list2));
+        assertThrows(IllegalStateException.class, () -> {
+            businessSchedule.insert(list2);
+        });
     }
 
     @Test

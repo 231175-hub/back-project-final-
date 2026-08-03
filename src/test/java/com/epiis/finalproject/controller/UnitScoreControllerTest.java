@@ -6,14 +6,10 @@ import com.epiis.finalproject.dto.request.unitscore.RequestUnitScoreUpdate;
 import com.epiis.finalproject.dto.response.unitscore.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.ResponseEntity;
 
-import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-class UnitScoreControllerTest {
+class UnitScoreControllerTest extends BaseControllerTest {
 
     private BusinessUnitScore businessUnitScore;
     private UnitScoreController controller;
@@ -30,45 +26,31 @@ class UnitScoreControllerTest {
         ResponseUnitScoreInsert resp = new ResponseUnitScoreInsert();
         resp.success();
         when(businessUnitScore.insert(req)).thenReturn(resp);
-
-        ResponseEntity<ResponseUnitScoreInsert> result = controller.insert(req);
-        assertEquals(200, result.getStatusCode().value());
+        assertOk(controller.insert(req));
     }
 
     @Test
     void testGetAll() {
-        Map<String, Object> map = new HashMap<>();
-        when(businessUnitScore.getAll()).thenReturn(map);
-
-        ResponseEntity<Map<String, Object>> result = controller.getAll();
-        assertEquals(200, result.getStatusCode().value());
+        when(businessUnitScore.getAll()).thenReturn(emptyMap());
+        assertOk(controller.getAll());
     }
 
     @Test
     void testGetById() {
-        Map<String, Object> map = new HashMap<>();
-        when(businessUnitScore.getById("us1")).thenReturn(map);
-
-        ResponseEntity<Map<String, Object>> result = controller.getById("us1");
-        assertEquals(200, result.getStatusCode().value());
+        when(businessUnitScore.getById("us1")).thenReturn(emptyMap());
+        assertOk(controller.getById("us1"));
     }
 
     @Test
     void testDeleteById() {
-        ResponseUnitScoreDeleteById resp = new ResponseUnitScoreDeleteById();
-        when(businessUnitScore.deleteById("us1")).thenReturn(resp);
-
-        ResponseEntity<ResponseUnitScoreDeleteById> result = controller.deleteById("us1");
-        assertEquals(200, result.getStatusCode().value());
+        when(businessUnitScore.deleteById("us1")).thenReturn(new ResponseUnitScoreDeleteById());
+        assertOk(controller.deleteById("us1"));
     }
 
     @Test
     void testUpdate() {
         RequestUnitScoreUpdate req = new RequestUnitScoreUpdate();
-        ResponseUnitScoreUpdate resp = new ResponseUnitScoreUpdate();
-        when(businessUnitScore.update("us1", req)).thenReturn(resp);
-
-        ResponseEntity<ResponseUnitScoreUpdate> result = controller.update("us1", req);
-        assertEquals(200, result.getStatusCode().value());
+        when(businessUnitScore.update("us1", req)).thenReturn(new ResponseUnitScoreUpdate());
+        assertOk(controller.update("us1", req));
     }
 }

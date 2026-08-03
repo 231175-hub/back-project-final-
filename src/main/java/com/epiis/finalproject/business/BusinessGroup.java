@@ -3,11 +3,13 @@ package com.epiis.finalproject.business;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+
+import com.epiis.finalproject.helper.DateUtil;
+import com.epiis.finalproject.helper.ResponseMapBuilder;
 
 import org.springframework.stereotype.Service;
 
@@ -40,8 +42,12 @@ import com.epiis.finalproject.staticdata.EnumAcademicPeriod;
 
 import jakarta.transaction.Transactional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Service
 public class BusinessGroup {
+	private static final Logger log = LoggerFactory.getLogger(BusinessGroup.class);
 	private final RepositoryGroup repositoryGroup;
 	private final RepositoryGroupStudent repositoryGroupStudent;
 	private final RepositoryCourseEnrollment repositoryCourseEnrollment;
@@ -81,7 +87,7 @@ public class BusinessGroup {
 		entityGroup.setConceptualWeight(request.getConceptualWeight() == 0 ? 0.4 : request.getConceptualWeight());
 		entityGroup.setPracticalWeight(request.getPracticalWeight() == 0 ? 0.4 : request.getPracticalWeight());
 		entityGroup.setAttitudinalWeight(request.getAttitudinalWeight() == 0 ? 0.2 : request.getAttitudinalWeight());
-		entityGroup.setCreatedAt(new java.sql.Date(new Date().getTime()));
+		entityGroup.setCreatedAt(DateUtil.currentSqlDate());
 		entityGroup.setUpdatedAt(entityGroup.getCreatedAt());
 
 		repositoryGroup.save(entityGroup);
@@ -95,35 +101,17 @@ public class BusinessGroup {
 	}
 
 	public Map<String, Object> getAll() {
-		ResponseGroupGetAll response = new ResponseGroupGetAll();
-
-		Map<String, Object> res = new HashMap<>();
-
-		List<EntityGroup> entityGroup = repositoryGroup.findAll();
-
-		response.success();
-		response.getListMessage().add("Grupos Entregados Correctamente");
-
-		res.put("message", response);
-		res.put("data", entityGroup);
-
-		return res;
+		return ResponseMapBuilder.buildDataMap(
+				new ResponseGroupGetAll(),
+				"Grupos Entregados Correctamente",
+				repositoryGroup.findAll());
 	}
 
 	public Map<String, Object> getById(String idGroup) {
-		ResponseGroupGetById response = new ResponseGroupGetById();
-
-		Map<String, Object> res = new HashMap<>();
-
-		Optional<EntityGroup> entityGroup = repositoryGroup.findById(idGroup);
-
-		response.success();
-		response.getListMessage().add("Grupo Encontrado Correctamente");
-
-		res.put("message", response);
-		res.put("data", entityGroup);
-
-		return res;
+		return ResponseMapBuilder.buildDataMap(
+				new ResponseGroupGetById(),
+				"Grupo Encontrado Correctamente",
+				repositoryGroup.findById(idGroup));
 	}
 
 	public ResponseGroupDeleteById deleteById(String idGroup) {
@@ -162,7 +150,7 @@ public class BusinessGroup {
 			entityGroup.setPracticalWeight(request.getPracticalWeight() == 0 ? 0.4 : request.getPracticalWeight());
 			entityGroup
 					.setAttitudinalWeight(request.getAttitudinalWeight() == 0 ? 0.2 : request.getAttitudinalWeight());
-			entityGroup.setUpdatedAt(new java.sql.Date(new Date().getTime()));
+			entityGroup.setUpdatedAt(DateUtil.currentSqlDate());
 
 			repositoryGroup.save(entityGroup);
 
@@ -289,7 +277,7 @@ public class BusinessGroup {
 			response.getListMessage().add("Grupos obtenidos correctamente");
 
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error("Error al obtener los grupos", e);
 			response.error();
 			response.getListMessage().add("Error al obtener los grupos: " + e.getMessage());
 		}

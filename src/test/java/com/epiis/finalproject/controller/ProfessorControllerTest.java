@@ -6,14 +6,10 @@ import com.epiis.finalproject.dto.request.professor.RequestProfessorUpdate;
 import com.epiis.finalproject.dto.response.professor.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.ResponseEntity;
 
-import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-class ProfessorControllerTest {
+class ProfessorControllerTest extends BaseControllerTest {
 
     private BusinessProfessor businessProfessor;
     private ProfessorController controller;
@@ -30,45 +26,31 @@ class ProfessorControllerTest {
         ResponseProfessorInsert resp = new ResponseProfessorInsert();
         resp.success();
         when(businessProfessor.insert(req)).thenReturn(resp);
-
-        ResponseEntity<ResponseProfessorInsert> result = controller.insert(req);
-        assertEquals(200, result.getStatusCode().value());
+        assertOk(controller.insert(req));
     }
 
     @Test
     void testGetAll() {
-        Map<String, Object> map = new HashMap<>();
-        when(businessProfessor.getAll()).thenReturn(map);
-
-        ResponseEntity<Map<String, Object>> result = controller.getAll();
-        assertEquals(200, result.getStatusCode().value());
+        when(businessProfessor.getAll()).thenReturn(emptyMap());
+        assertOk(controller.getAll());
     }
 
     @Test
     void testGetById() {
-        Map<String, Object> map = new HashMap<>();
-        when(businessProfessor.getById("p1")).thenReturn(map);
-
-        ResponseEntity<Map<String, Object>> result = controller.getById("p1");
-        assertEquals(200, result.getStatusCode().value());
+        when(businessProfessor.getById("p1")).thenReturn(emptyMap());
+        assertOk(controller.getById("p1"));
     }
 
     @Test
     void testDeleteById() {
-        ResponseProfessorDeleteById resp = new ResponseProfessorDeleteById();
-        when(businessProfessor.deleteById("p1")).thenReturn(resp);
-
-        ResponseEntity<ResponseProfessorDeleteById> result = controller.deleteById("p1");
-        assertEquals(200, result.getStatusCode().value());
+        when(businessProfessor.deleteById("p1")).thenReturn(new ResponseProfessorDeleteById());
+        assertOk(controller.deleteById("p1"));
     }
 
     @Test
     void testUpdate() {
         RequestProfessorUpdate req = new RequestProfessorUpdate();
-        ResponseProfessorUpdate resp = new ResponseProfessorUpdate();
-        when(businessProfessor.update("p1", req)).thenReturn(resp);
-
-        ResponseEntity<ResponseProfessorUpdate> result = controller.update("p1", req);
-        assertEquals(200, result.getStatusCode().value());
+        when(businessProfessor.update("p1", req)).thenReturn(new ResponseProfessorUpdate());
+        assertOk(controller.update("p1", req));
     }
 }

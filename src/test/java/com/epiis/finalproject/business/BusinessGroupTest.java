@@ -3,20 +3,39 @@ package com.epiis.finalproject.business;
 import com.epiis.finalproject.dto.request.group.RequestGroupAssignment;
 import com.epiis.finalproject.dto.request.group.RequestGroupInsert;
 import com.epiis.finalproject.dto.request.group.RequestGroupUpdate;
-import com.epiis.finalproject.dto.response.group.*;
+import com.epiis.finalproject.dto.response.group.ResponseGroupDeleteById;
+import com.epiis.finalproject.dto.response.group.ResponseGroupInsert;
+import com.epiis.finalproject.dto.response.group.ResponseGroupUpdate;
+import com.epiis.finalproject.dto.response.group.ResponseProfessorGroups;
 import com.epiis.finalproject.dto.response.groupstudent.ResponseGroupStudentInsert;
-import com.epiis.finalproject.entity.*;
-import com.epiis.finalproject.repository.*;
+import com.epiis.finalproject.entity.EntityAcademicPeriod;
+import com.epiis.finalproject.entity.EntityCourse;
+import com.epiis.finalproject.entity.EntityCourseEnrollment;
+import com.epiis.finalproject.entity.EntityGroup;
+import com.epiis.finalproject.entity.EntityStudent;
+import com.epiis.finalproject.repository.RepositoryAcademicperiod;
+import com.epiis.finalproject.repository.RepositoryCourse;
+import com.epiis.finalproject.repository.RepositoryCourseEnrollment;
+import com.epiis.finalproject.repository.RepositoryGroup;
+import com.epiis.finalproject.repository.RepositoryGroupStudent;
+import com.epiis.finalproject.repository.RepositoryUnits;
 import com.epiis.finalproject.staticdata.EnumAcademicPeriod;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class BusinessGroupTest {
 
@@ -54,8 +73,8 @@ class BusinessGroupTest {
 
         ResponseGroupInsert response = businessGroup.insert(req);
         assertEquals("success", response.getType());
-        verify(repositoryGroup, times(1)).save(any());
-        verify(repositoryUnits, times(3)).save(any());
+        verify(repositoryGroup, times(1)).save(any(com.epiis.finalproject.entity.EntityGroup.class));
+        verify(repositoryUnits, times(3)).save(any(com.epiis.finalproject.entity.EntityUnits.class));
     }
 
     @Test

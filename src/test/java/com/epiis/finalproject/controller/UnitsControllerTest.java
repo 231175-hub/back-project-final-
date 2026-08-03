@@ -6,14 +6,10 @@ import com.epiis.finalproject.dto.request.units.RequestUnitsUpdate;
 import com.epiis.finalproject.dto.response.units.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.ResponseEntity;
 
-import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-class UnitsControllerTest {
+class UnitsControllerTest extends BaseControllerTest {
 
     private BusinessUnits businessUnits;
     private UnitsController controller;
@@ -30,45 +26,31 @@ class UnitsControllerTest {
         ResponseUnitsInsert resp = new ResponseUnitsInsert();
         resp.success();
         when(businessUnits.insert(req)).thenReturn(resp);
-
-        ResponseEntity<ResponseUnitsInsert> result = controller.insert(req);
-        assertEquals(200, result.getStatusCode().value());
+        assertOk(controller.insert(req));
     }
 
     @Test
     void testGetAll() {
-        Map<String, Object> map = new HashMap<>();
-        when(businessUnits.getAll()).thenReturn(map);
-
-        ResponseEntity<Map<String, Object>> result = controller.getAll();
-        assertEquals(200, result.getStatusCode().value());
+        when(businessUnits.getAll()).thenReturn(emptyMap());
+        assertOk(controller.getAll());
     }
 
     @Test
     void testGetById() {
-        Map<String, Object> map = new HashMap<>();
-        when(businessUnits.getById("u1")).thenReturn(map);
-
-        ResponseEntity<Map<String, Object>> result = controller.getById("u1");
-        assertEquals(200, result.getStatusCode().value());
+        when(businessUnits.getById("u1")).thenReturn(emptyMap());
+        assertOk(controller.getById("u1"));
     }
 
     @Test
     void testDeleteById() {
-        ResponseUnitsDeleteById resp = new ResponseUnitsDeleteById();
-        when(businessUnits.deleteById("u1")).thenReturn(resp);
-
-        ResponseEntity<ResponseUnitsDeleteById> result = controller.deleteById("u1");
-        assertEquals(200, result.getStatusCode().value());
+        when(businessUnits.deleteById("u1")).thenReturn(new ResponseUnitsDeleteById());
+        assertOk(controller.deleteById("u1"));
     }
 
     @Test
     void testUpdate() {
         RequestUnitsUpdate req = new RequestUnitsUpdate();
-        ResponseUnitsUpdate resp = new ResponseUnitsUpdate();
-        when(businessUnits.update("u1", req)).thenReturn(resp);
-
-        ResponseEntity<ResponseUnitsUpdate> result = controller.insert("u1", req);
-        assertEquals(200, result.getStatusCode().value());
+        when(businessUnits.update("u1", req)).thenReturn(new ResponseUnitsUpdate());
+        assertOk(controller.insert("u1", req));
     }
 }

@@ -6,17 +6,12 @@ import com.epiis.finalproject.dto.request.course.RequestCourseUpdate;
 import com.epiis.finalproject.dto.response.course.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.ResponseEntity;
 
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-class CourseControllerTest {
+class CourseControllerTest extends BaseControllerTest {
 
     private BusinessCourse businessCourse;
     private CourseController controller;
@@ -30,55 +25,38 @@ class CourseControllerTest {
     @Test
     void testInsert() {
         RequestCourseInsert req = new RequestCourseInsert();
-        ResponseCourseInsert resMock = new ResponseCourseInsert();
-        when(businessCourse.insert(req)).thenReturn(resMock);
-
-        ResponseEntity<ResponseCourseInsert> response = controller.insert(req);
-        assertNotNull(response);
+        when(businessCourse.insert(req)).thenReturn(new ResponseCourseInsert());
+        assertOk(controller.insert(req));
     }
 
     @Test
     void testGetAll() {
-        Map<String, Object> mockMap = new HashMap<>();
-        when(businessCourse.getAll()).thenReturn(mockMap);
-
-        ResponseEntity<Map<String, Object>> response = controller.getAll();
-        assertNotNull(response);
+        when(businessCourse.getAll()).thenReturn(emptyMap());
+        assertOk(controller.getAll());
     }
 
     @Test
     void testGetById() {
-        Map<String, Object> mockMap = new HashMap<>();
-        when(businessCourse.getById("c1")).thenReturn(mockMap);
-
-        ResponseEntity<Map<String, Object>> response = controller.getById("c1");
-        assertNotNull(response);
+        when(businessCourse.getById("c1")).thenReturn(emptyMap());
+        assertOk(controller.getById("c1"));
     }
 
     @Test
     void testDeleteById() {
-        ResponseCourseDeleteById resMock = new ResponseCourseDeleteById();
-        when(businessCourse.deleteById("c1")).thenReturn(resMock);
-
-        ResponseEntity<ResponseCourseDeleteById> response = controller.deleteById("c1");
-        assertNotNull(response);
+        when(businessCourse.deleteById("c1")).thenReturn(new ResponseCourseDeleteById());
+        assertOk(controller.deleteById("c1"));
     }
 
     @Test
     void testUpdate() {
         RequestCourseUpdate req = new RequestCourseUpdate();
-        ResponseCourseUpdate resMock = new ResponseCourseUpdate();
-        when(businessCourse.update("c1", req)).thenReturn(resMock);
-
-        ResponseEntity<ResponseCourseUpdate> response = controller.update("c1", req);
-        assertNotNull(response);
+        when(businessCourse.update("c1", req)).thenReturn(new ResponseCourseUpdate());
+        assertOk(controller.update("c1", req));
     }
 
     @Test
     void testSearchCourses() {
         when(businessCourse.searchCoursesForAutocomplete("alg", "s1")).thenReturn(Collections.emptyList());
-
-        ResponseEntity<List<ResponseCourseSearch>> response = controller.searchCourse("alg", "s1");
-        assertNotNull(response);
+        assertOk(controller.searchCourse("alg", "s1"));
     }
 }
